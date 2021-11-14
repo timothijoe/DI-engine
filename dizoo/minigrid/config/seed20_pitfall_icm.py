@@ -2,7 +2,7 @@ from easydict import EasyDict
 from ding.entry import serial_pipeline_reward_model
 
 minigrid_ppo_rnd_config = dict(
-    exp_name='PitfallNoFrameskip-v4-seed10',  #exp_name='minigrid_empty8_ppo_rnd',
+    exp_name='PitfallNoFrameskip-v4-seed20',  #exp_name='minigrid_empty8_ppo_rnd',
     #exp_name='MiniGrid-DoorKey-16x16-v0-curiosity-real_version',  #exp_name='minigrid_empty8_ppo_rnd',
     env=dict(
         collector_env_num=8,
@@ -16,9 +16,9 @@ minigrid_ppo_rnd_config = dict(
         intrinsic_reward_type='add',  # 'assign'
         learning_rate=0.001,
         obs_shape=[4, 84, 84],
+        action_shape=18,
         batch_size=128,
         update_per_collect=10,
-        action_shape=18,
     ),
     policy=dict(
         cuda=True,
@@ -70,4 +70,4 @@ minigrid_ppo_rnd_create_config = EasyDict(minigrid_ppo_rnd_create_config)
 create_config = minigrid_ppo_rnd_create_config
 
 if __name__ == "__main__":
-    serial_pipeline_reward_model([main_config, create_config], seed=10)
+    serial_pipeline_reward_model([main_config, create_config], seed=20)

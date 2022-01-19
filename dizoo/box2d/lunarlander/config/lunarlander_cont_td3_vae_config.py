@@ -14,7 +14,7 @@ lunarlander_td3vae_config = dict(
         stop_value=200,
     ),
     policy=dict(
-        cuda=True,
+        cuda=False,
         priority=False,
         random_collect_size=10000,
         original_action_shape=2,

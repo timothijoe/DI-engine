@@ -13,9 +13,9 @@ from ding.utils import POLICY_REGISTRY
 from ding.utils.data import default_collate, default_decollate
 from .base_policy import Policy
 from .common_utils import default_preprocess_learn
-from ding.model.template.
+from ding.model.template.ad_vae import VAELSTM
 
 class ADSAC(SACPolicy):
     def _init_learn(self):
         super()._init_learn()
-        self._vae_model = 
+        self._vae_model = VAELSTM()

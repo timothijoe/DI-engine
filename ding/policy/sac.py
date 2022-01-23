@@ -705,11 +705,11 @@ class SACPolicy(Policy):
         self._twin_critic = self._cfg.model.twin_critic
 
         # Weight Init for the last output layer
-        init_w = self._cfg.learn.init_w
-        self._model.actor[2].mu.weight.data.uniform_(-init_w, init_w)
-        self._model.actor[2].mu.bias.data.uniform_(-init_w, init_w)
-        self._model.actor[2].log_sigma_layer.weight.data.uniform_(-init_w, init_w)
-        self._model.actor[2].log_sigma_layer.bias.data.uniform_(-init_w, init_w)
+        # init_w = self._cfg.learn.init_w
+        # self._model.actor[2].mu.weight.data.uniform_(-init_w, init_w)
+        # self._model.actor[2].mu.bias.data.uniform_(-init_w, init_w)
+        # self._model.actor[2].log_sigma_layer.weight.data.uniform_(-init_w, init_w)
+        # self._model.actor[2].log_sigma_layer.bias.data.uniform_(-init_w, init_w)
 
         # Optimizers
         if self._value_network:

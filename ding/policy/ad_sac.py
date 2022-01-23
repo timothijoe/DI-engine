@@ -15,13 +15,76 @@ from .base_policy import Policy
 from .common_utils import default_preprocess_learn
 from ding.model.template.ad_vae import VAELSTM
 from ding.policy.sac import SACPolicy
-
+from ding.model import create_model
+from ding.utils import import_module, allreduce, broadcast, get_rank, allreduce_async, synchronize, POLICY_REGISTRY
+@POLICY_REGISTRY.register('ad_sac')
 class ADSAC(SACPolicy):
+
+    def __init__(
+            self,
+            cfg: dict,
+            model = None,
+            enable_field= None
+    ) -> None:
+        self._cfg = cfg
+        self._on_policy = self._cfg.on_policy
+        if enable_field is None:
+            self._enable_field = self.total_field
+        else:
+            self._enable_field = enable_field
+        assert set(self._enable_field).issubset(self.total_field), self._enable_field
+
+        if len(set(self._enable_field).intersection(set(['learn', 'collect', 'eval']))) > 0:
+            model = self._create_model_ad(cfg, model)
+            self._cuda = cfg.cuda and torch.cuda.is_available()
+            # now only support multi-gpu for only enable learn mode
+            if len(set(self._enable_field).intersection(set(['learn']))) > 0:
+                self._rank = get_rank() if self._cfg.learn.multi_gpu else 0
+                if self._cuda:
+                    torch.cuda.set_device(self._rank % torch.cuda.device_count())
+                    model.cuda()
+                if self._cfg.learn.multi_gpu:
+                    bp_update_sync = self._cfg.learn.get('bp_update_sync', True)
+                    self._bp_update_sync = bp_update_sync
+                    self._init_multi_gpu_setting(model, bp_update_sync)
+            else:
+                self._rank = 0
+                if self._cuda:
+                    torch.cuda.set_device(self._rank % torch.cuda.device_count())
+                    model.cuda()
+            self._model = model
+            self._device = 'cuda:{}'.format(self._rank % torch.cuda.device_count()) if self._cuda else 'cpu'
+        else:
+            self._cuda = False
+            self._rank = 0
+            self._device = 'cpu'
+
+        for field in self._enable_field:
+            getattr(self, '_init_' + field)()
     def _init_learn(self):
         super()._init_learn()
         self._vae_model = VAELSTM()
-        self._optimizer_vae = Adam(self._vae_model.parameters(), lr = self._cfg.learn.learning_rate_actor)
+        self._optimizer_vae = Adam(self._vae_model.parameters(), lr = self._cfg.learn.learning_rate_value)
+    def ad_default_model(self) -> Tuple[str, List[str]]:
+        return 'ad_qac', ['ding.model.template.ad_qac']
+        # if self._cfg.multi_agent:
+        #     return 'maqac_continuous', ['ding.model.template.maqac']
+        # else:
+        #     return 'qac', ['ding.model.template.qac']
 
+    def _create_model_ad(self, cfg: dict, model= None) -> torch.nn.Module:
+        if model is None:
+            model_cfg = cfg.model
+            if 'type' not in model_cfg:
+                m_type, import_names = self.ad_default_model()
+                model_cfg.type = m_type
+                model_cfg.import_names = import_names
+            return create_model(model_cfg)
+        else:
+            if isinstance(model, torch.nn.Module):
+                return model
+            else:
+                raise RuntimeError("invalid model: {}".format(type(model)))
     def _forward_learn(self, data: dict) -> Dict[str, Any]:
         """
         Overview:
@@ -190,6 +253,7 @@ class ADSAC(SACPolicy):
         data = default_collate(list(data.values()))
         if self._cuda:
             data = to_device(data, self._device)
+        init_state_batch = data[:, 1, 1, 0: 4]
         self._collect_model.eval()
         with torch.no_grad():
             (mu, sigma) = self._collect_model.forward(data, mode='compute_actor')['logit']
@@ -197,8 +261,61 @@ class ADSAC(SACPolicy):
             action = torch.tanh(dist.rsample())
             output = {'logit': (mu, sigma), 'action': action}
             output['latent_action'] = output['action']
-            output['action'] = self._vae_model.decode(output['action'], data)
+            traj = self._vae_model.decode(output['action'], init_state_batch)
+            traj = torch.cat([init_state_batch.unsqueeze(1), traj], dim = 1)
+            output['action'] = traj[:, :,:2]
         if self._cuda:
             output = to_device(output, 'cpu')
         output = default_decollate(output)
         return {i: d for i, d in zip(data_id, output)}
+
+    def _forward_eval(self, data: dict) -> dict:
+        r"""
+        Overview:
+            Forward function of eval mode, similar to ``self._forward_collect``.
+        Arguments:
+            - data (:obj:`Dict[str, Any]`): Dict type data, stacked env data for predicting policy_output(action), \
+                values are torch.Tensor or np.ndarray or dict/list combinations, keys are env_id indicated by integer.
+        Returns:
+            - output (:obj:`Dict[int, Any]`): The dict of predicting action for the interaction with env.
+        ReturnsKeys
+            - necessary: ``action``
+            - optional: ``logit``
+        """
+        data_id = list(data.keys())
+        data = default_collate(list(data.values()))
+        if self._cuda:
+            data = to_device(data, self._device)
+        init_state_batch = data[:, 1, 1, 0: 4]
+        self._eval_model.eval()
+        with torch.no_grad():
+            (mu, sigma) = self._eval_model.forward(data, mode='compute_actor')['logit']
+            action = torch.tanh(mu)  # deterministic_eval
+            output = {'latent_action': action}
+            output['action'] = self._vae_model.decode(output['latent_action'], init_state_batch)
+        if self._cuda:
+            output = to_device(output, 'cpu')
+        output = default_decollate(output)
+        return {i: d for i, d in zip(data_id, output)}
+
+    def _process_transition(self, obs: Any, model_output: dict, timestep: namedtuple) -> Dict[str, Any]:
+        r"""
+        Overview:
+            Generate dict type transition data from inputs.
+        Arguments:
+            - obs (:obj:`Any`): Env observation
+            - model_output (:obj:`dict`): Output of collect model, including at least ['action']
+            - timestep (:obj:`namedtuple`): Output after env step, including at least ['obs', 'reward', 'done'] \
+                (here 'obs' indicates obs after env step, i.e. next_obs).
+        Return:
+            - transition (:obj:`Dict[str, Any]`): Dict type transition data.
+        """
+
+        transition = {
+            'obs' : obs,
+            'next_obs': timestep.obs,
+            'action': model_output['latent_action'],
+            'reward': timestep.reward,
+            'done': timestep.done,
+        }
+        return transition

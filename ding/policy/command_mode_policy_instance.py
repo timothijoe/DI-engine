@@ -36,7 +36,7 @@ from .r2d3 import R2D3Policy
 from .d4pg import D4PGPolicy
 from .cql import CQLPolicy, CQLDiscretePolicy
 from .pdqn import PDQNPolicy
-
+from ding.policy.ad_sac import ADSAC
 
 class EpsCommandModePolicy(CommandModePolicy):
 
@@ -219,6 +219,9 @@ class TD3CommandModePolicy(TD3Policy, DummyCommandModePolicy):
 class TD3VAECommandModePolicy(TD3VAEPolicy, DummyCommandModePolicy):
     pass
 
+@POLICY_REGISTRY.register('ad_sac_command')
+class TD3VAECommandModePolicy(ADSAC, DummyCommandModePolicy):
+    pass
 
 @POLICY_REGISTRY.register('td3_bc_command')
 class TD3BCCommandModePolicy(TD3BCPolicy, DummyCommandModePolicy):

@@ -6,7 +6,7 @@ import math
 import pdb
 from torch.distributions import Normal, Independent
 # import torch.distributions.multivariate_normal.MultivariateNormal as MultivariateNormal
-
+from easydict import EasyDict
 def kl_divergence_with_unit_gaussian(mu, sigma):
 	"""Here self=q and other=p and we compute KL(q, p)"""
 	KL_Div = - torch.mean(torch.sum((1 + torch.log(sigma**2) - mu**2 - sigma**2), 1) / 2, 0)
@@ -75,7 +75,7 @@ class VAELSTM(nn.Module):
         # (str) RL policy register name (refer to function "POLICY_REGISTRY").
         embedding_dim = 64,
         h_dim = 64,
-        latent_dim = 100,
+        latent_dim = 64,
         seq_len = 30,
         use_relative_pos = True,
         kld_weight = 0.01,
@@ -83,7 +83,7 @@ class VAELSTM(nn.Module):
         dt = 0.03,
         )
     def __init__(self):
-        self._cfg = self.cfg
+        self._cfg = EasyDict(self.config)
         super(VAELSTM, self).__init__()
         self.embedding_dim = self._cfg.embedding_dim
         self.h_dim = self._cfg.h_dim 
@@ -180,6 +180,9 @@ class VAELSTM(nn.Module):
         decoder_input = self.spatial_embedding(prev_state)
         decoder_input = decoder_input.view(1, -1 , self.embedding_dim)
         decoder_h = self.init_hidden_decoder(z)
+        if len(decoder_h.shape) == 2:
+            decoder_h = torch.unsqueeze(decoder_h, 0)
+            #decoder_h.unsqueeze(0)
         decoder_h = (decoder_h, decoder_h)
         for _ in range(self.seq_len):
             # output shape: 1 x batch x h_dim

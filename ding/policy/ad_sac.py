@@ -64,6 +64,8 @@ class ADSAC(SACPolicy):
     def _init_learn(self):
         super()._init_learn()
         self._vae_model = VAELSTM()
+        model_PATH = '/home/SENSETIME/zhoutong/hoffnung/motion_primitive_vae/result/christmas105/ckpt/47_ckpt'
+        self._vae_model.load_state_dict(torch.load(model_PATH))
         self._optimizer_vae = Adam(self._vae_model.parameters(), lr = self._cfg.learn.learning_rate_value)
     def ad_default_model(self) -> Tuple[str, List[str]]:
         return 'ad_qac', ['ding.model.template.ad_qac']
@@ -253,7 +255,7 @@ class ADSAC(SACPolicy):
         data = default_collate(list(data.values()))
         if self._cuda:
             data = to_device(data, self._device)
-        init_state_batch = data[:, 1, 1, 0: 4]
+        init_state_batch = data[:, 1, 0, 0: 4]
         self._collect_model.eval()
         with torch.no_grad():
             (mu, sigma) = self._collect_model.forward(data, mode='compute_actor')['logit']
@@ -314,7 +316,7 @@ class ADSAC(SACPolicy):
         transition = {
             'obs' : obs,
             'next_obs': timestep.obs,
-            'action': model_output['latent_action'],
+            'latent_action': model_output['latent_action'],
             'reward': timestep.reward,
             'done': timestep.done,
         }

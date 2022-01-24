@@ -75,7 +75,7 @@ class VAELSTM(nn.Module):
         # (str) RL policy register name (refer to function "POLICY_REGISTRY").
         embedding_dim = 64,
         h_dim = 64,
-        latent_dim = 64,
+        latent_dim = 100,
         seq_len = 30,
         use_relative_pos = True,
         kld_weight = 0.01,

@@ -22,7 +22,7 @@ class NNGMQ(MQ):
         self.listen_to = listen_to
         self.attach_to = attach_to or []
         self._sock: Bus0 = None
-        self._running = False
+        self._finished = False
 
     def listen(self) -> None:
         self._sock = sock = Bus0()
@@ -30,10 +30,9 @@ class NNGMQ(MQ):
         sleep(0.1)  # Wait for peers to bind
         for contact in self.attach_to:
             sock.dial(contact)
-        self._running = True
 
     def publish(self, topic: str, data: bytes) -> None:
-        if self._running:
+        if not self._finished:
             topic += "::"
             data = topic.encode() + data
             self._sock.send(data)
@@ -47,7 +46,7 @@ class NNGMQ(MQ):
     def recv(self) -> Tuple[str, bytes]:
         while True:
             try:
-                if not self._running:
+                if self._finished:
                     break
                 msg = self._sock.recv()
                 # Use topic at the beginning of the message, so we don't need to call pickle.loads
@@ -57,14 +56,15 @@ class NNGMQ(MQ):
             except pynng.Timeout:
                 logging.warning("Timeout on node {} when waiting for message from bus".format(self.listen_to))
             except pynng.Closed:
-                if self._running:
+                if not self._finished:
                     logging.error("The socket was not closed under normal circumstances!")
             except Exception as e:
                 logging.error("Meet exception when listening for new messages", e)
 
     def stop(self) -> None:
-        if self._running:
-            self._running = False
+        finished = self._finished
+        self._finished = True
+        if not finished:
             self._sock.close()
             self._sock = None
 

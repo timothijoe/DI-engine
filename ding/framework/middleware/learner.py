@@ -45,7 +45,7 @@ class OffPolicyLearner:
         Output of ctx:
             - train_output (:obj:`Deque`): The training output in deque.
         """
-        train_output_queue = []
+        train_output_queue = deque()
         for _ in range(self.cfg.policy.learn.update_per_collect):
             self._fetcher(ctx)
             if ctx.train_data is None:
@@ -88,7 +88,7 @@ class HERLearner:
         Output of ctx:
             - train_output (:obj:`Deque`): The deque of training output.
         """
-        train_output_queue = []
+        train_output_queue = deque()
         for _ in range(self.cfg.policy.learn.update_per_collect):
             self._fetcher(ctx)
             if ctx.train_data is None:

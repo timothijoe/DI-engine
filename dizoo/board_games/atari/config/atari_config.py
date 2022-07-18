@@ -29,28 +29,28 @@ game_config = EasyDict(dict(
     augmentation=['shift', 'intensity'],
 
     # debug
-    # collector_env_num=1,
-    # evaluator_env_num=1,
-    # max_episode_steps=int(1e4),
-    # test_max_episode_steps=int(1e4),
-    # num_simulations=8,
-    # batch_size=4,
-    # game_history_max_length=20,
-    # total_transitions=int(1e5),
-    # num_unroll_steps=5,
-    # td_steps=5,
-
     collector_env_num=1,
-    evaluator_env_num=3,
-    max_episode_steps=int(1.08e5),
-    test_max_episode_steps=int(1.08e5),
-    # TODO(pu): how to set proper num_simulations?
-    num_simulations=50,
-    batch_size=256,
-    game_history_max_length=400,
+    evaluator_env_num=1,
+    max_episode_steps=int(1e4),
+    test_max_episode_steps=int(1e4),
+    num_simulations=8,
+    batch_size=4,
+    game_history_max_length=20,
     total_transitions=int(1e5),
     num_unroll_steps=5,
     td_steps=5,
+
+    # collector_env_num=1,
+    # evaluator_env_num=3,
+    # max_episode_steps=int(1.08e5),
+    # test_max_episode_steps=int(1.08e5),
+    # # TODO(pu): how to set proper num_simulations?
+    # num_simulations=50,
+    # batch_size=256,
+    # game_history_max_length=400,
+    # total_transitions=int(1e5),
+    # num_unroll_steps=5,
+    # td_steps=5,
 
     # TODO(pu): why 0.99?
     revisit_policy_search_rate=0.99,

@@ -1,13 +1,15 @@
 import pytest
 from itertools import product
 import torch
-from ding.model.template import DQN, RainbowDQN, QRDQN, IQN, DRQN, C51DQN
+from ding.model.template import DQN, RainbowDQN, QRDQN, IQN, FQF, DRQN, C51DQN
 from ding.torch_utils import is_differentiable
 
 T, B = 3, 4
 obs_shape = [4, (8, ), (4, 64, 64)]
 act_shape = [3, (6, ), [2, 3, 6]]
+act_shape_fqf = [3, (6, )]
 args = list(product(*[obs_shape, act_shape]))
+args_fqf = list(product(*[obs_shape, act_shape_fqf]))
 
 
 @pytest.mark.unittest
@@ -108,6 +110,34 @@ class TestQLearning:
                 assert outputs['quantiles'][i].shape == (B * num_quantiles, 1)
         self.output_check(model, outputs['logit'])
 
+    @pytest.mark.parametrize('obs_shape, act_shape', args_fqf)
+    def test_fqf(self, obs_shape, act_shape):
+        if isinstance(obs_shape, int):
+            inputs = torch.randn(B, obs_shape)
+        else:
+            inputs = torch.randn(B, *obs_shape)
+        num_quantiles = 48
+        model = FQF(obs_shape, act_shape, num_quantiles=num_quantiles, quantile_embedding_size=64)
+        outputs = model(inputs)
+        print(model)
+        assert isinstance(outputs, dict)
+        if isinstance(act_shape, int):
+            assert outputs['logit'].shape == (B, act_shape)
+            assert outputs['q'].shape == (B, num_quantiles, act_shape)
+            assert outputs['quantiles'].shape == (B, num_quantiles + 1)
+            assert outputs['quantiles_hats'].shape == (B, num_quantiles)
+            assert outputs['q_tau_i'].shape == (B, num_quantiles - 1, act_shape)
+        elif len(act_shape) == 1:
+            assert outputs['logit'].shape == (B, *act_shape)
+            assert outputs['q'].shape == (B, num_quantiles, *act_shape)
+            assert outputs['quantiles'].shape == (B, num_quantiles + 1)
+            assert outputs['quantiles_hats'].shape == (B, num_quantiles)
+            assert outputs['q_tau_i'].shape == (B, num_quantiles - 1, *act_shape)
+        self.output_check(model.head.quantiles_proposal, outputs['quantiles'])
+        for p in model.parameters():
+            p.grad = None
+        self.output_check(model.head.fqf_fc, outputs['q'])
+
     @pytest.mark.parametrize('obs_shape, act_shape', args)
     def test_qrdqn(self, obs_shape, act_shape):
         if isinstance(obs_shape, int):
@@ -139,7 +169,7 @@ class TestQLearning:
         else:
             inputs = torch.randn(T, B, *obs_shape)
         # (num_layer * num_direction, 1, head_hidden_size)
-        prev_state = [[torch.randn(1, 1, 64) for __ in range(2)] for _ in range(B)]
+        prev_state = [{k: torch.randn(1, 1, 64) for k in ['h', 'c']} for _ in range(B)]
         model = DRQN(obs_shape, act_shape)
         outputs = model({'obs': inputs, 'prev_state': prev_state}, inference=False)
         assert isinstance(outputs, dict)
@@ -152,7 +182,7 @@ class TestQLearning:
                 assert outputs['logit'][i].shape == (T, B, s)
         assert len(outputs['next_state']) == B
         assert all([len(t) == 2 for t in outputs['next_state']])
-        assert all([t[0].shape == (1, 1, 64) for t in outputs['next_state']])
+        assert all([t['h'].shape == (1, 1, 64) for t in outputs['next_state']])
         self.output_check(model, outputs['logit'])
 
     @pytest.mark.parametrize('obs_shape, act_shape', args)
@@ -162,7 +192,7 @@ class TestQLearning:
         else:
             inputs = torch.randn(B, *obs_shape)
         # (num_layer * num_direction, 1, head_hidden_size)
-        prev_state = [[torch.randn(1, 1, 64) for __ in range(2)] for _ in range(B)]
+        prev_state = [{k: torch.randn(1, 1, 64) for k in ['h', 'c']} for _ in range(B)]
         model = DRQN(obs_shape, act_shape)
         outputs = model({'obs': inputs, 'prev_state': prev_state}, inference=True)
         assert isinstance(outputs, dict)
@@ -175,7 +205,7 @@ class TestQLearning:
                 assert outputs['logit'][i].shape == (B, s)
         assert len(outputs['next_state']) == B
         assert all([len(t) == 2 for t in outputs['next_state']])
-        assert all([t[0].shape == (1, 1, 64) for t in outputs['next_state']])
+        assert all([t['h'].shape == (1, 1, 64) for t in outputs['next_state']])
         self.output_check(model, outputs['logit'])
 
     @pytest.mark.parametrize('obs_shape, act_shape', args)
@@ -185,7 +215,7 @@ class TestQLearning:
         else:
             inputs = torch.randn(T, B, *obs_shape)
         # (num_layer * num_direction, 1, head_hidden_size)
-        prev_state = [[torch.randn(1, 1, 64) for __ in range(2)] for _ in range(B)]
+        prev_state = [{k: torch.randn(1, 1, 64) for k in ['h', 'c']} for _ in range(B)]
         model = DRQN(obs_shape, act_shape, res_link=True)
         outputs = model({'obs': inputs, 'prev_state': prev_state}, inference=False)
         assert isinstance(outputs, dict)
@@ -198,7 +228,7 @@ class TestQLearning:
                 assert outputs['logit'][i].shape == (T, B, s)
         assert len(outputs['next_state']) == B
         assert all([len(t) == 2 for t in outputs['next_state']])
-        assert all([t[0].shape == (1, 1, 64) for t in outputs['next_state']])
+        assert all([t['h'].shape == (1, 1, 64) for t in outputs['next_state']])
         self.output_check(model, outputs['logit'])
 
     @pytest.mark.parametrize('obs_shape, act_shape', args)
@@ -208,7 +238,7 @@ class TestQLearning:
         else:
             inputs = torch.randn(B, *obs_shape)
         # (num_layer * num_direction, 1, head_hidden_size)
-        prev_state = [[torch.randn(1, 1, 64) for __ in range(2)] for _ in range(B)]
+        prev_state = [{k: torch.randn(1, 1, 64) for k in ['h', 'c']} for _ in range(B)]
         model = DRQN(obs_shape, act_shape, res_link=True)
         outputs = model({'obs': inputs, 'prev_state': prev_state}, inference=True)
         assert isinstance(outputs, dict)
@@ -221,5 +251,5 @@ class TestQLearning:
                 assert outputs['logit'][i].shape == (B, s)
         assert len(outputs['next_state']) == B
         assert all([len(t) == 2 for t in outputs['next_state']])
-        assert all([t[0].shape == (1, 1, 64) for t in outputs['next_state']])
+        assert all([t['h'].shape == (1, 1, 64) for t in outputs['next_state']])
         self.output_check(model, outputs['logit'])

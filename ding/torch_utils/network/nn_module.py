@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.init import xavier_normal_, kaiming_normal_, orthogonal_
 from typing import Union, Tuple, List, Callable
-from ding.compatibility import torch_gt_131
+from ding.compatibility import torch_ge_131
 
 from .normalization import build_normalization
 
@@ -246,6 +246,53 @@ def fc_block(
     return sequential_pack(block)
 
 
+def normed_linear(in_features, out_features, bias: bool = True, device=None, dtype=None, scale=1.0):
+    """
+    nn.Linear but with normalized fan-in init
+    """
+
+    out = nn.Linear(in_features, out_features, bias)
+
+    out.weight.data *= scale / out.weight.norm(dim=1, p=2, keepdim=True)
+    if bias:
+        out.bias.data.zero_()
+    return out
+
+
+def normed_conv2d(
+    in_channels,
+    out_channels,
+    kernel_size,
+    stride=1,
+    padding=0,
+    dilation=1,
+    groups=1,
+    bias: bool = True,
+    padding_mode='zeros',
+    device=None,
+    dtype=None,
+    scale=1
+):
+    """
+    nn.Conv2d but with normalized fan-in init
+    """
+    out = nn.Conv2d(
+        in_channels,
+        out_channels,
+        kernel_size,
+        stride,
+        padding,
+        dilation,
+        groups,
+        bias,
+        padding_mode,
+    )
+    out.weight.data *= scale / out.weight.norm(dim=(1, 2, 3), p=2, keepdim=True)
+    if bias:
+        out.bias.data.zero_()
+    return out
+
+
 def MLP(
     in_channels: int,
     hidden_channels: int,
@@ -255,7 +302,10 @@ def MLP(
     activation: nn.Module = None,
     norm_type: str = None,
     use_dropout: bool = False,
-    dropout_probability: float = 0.5
+    dropout_probability: float = 0.5,
+    output_activation: nn.Module = None,
+    output_norm_type: str = None,
+    last_linear_layer_init_zero: bool = False,
 ):
     r"""
     Overview:
@@ -272,6 +322,10 @@ def MLP(
         - norm_type (:obj:`str`): type of the normalization
         - use_dropout (:obj:`bool`): whether to use dropout in the fully-connected block
         - dropout_probability (:obj:`float`): probability of an element to be zeroed in the dropout. Default: 0.5
+        - output_activation (:obj:`nn.Module`): the optional activation function in the last layer
+        - output_norm_type (:obj:`str`): type of the normalization in the last layer
+        - last_linear_layer_linit_zero (:obj:`bool`): zero initialization for the last linear layer (including w and b).
+            This can provide stable zero outputs in the beginning.
     Returns:
         - block (:obj:`nn.Sequential`): a sequential list containing the torch layers of the fully-connected block
 
@@ -287,7 +341,7 @@ def MLP(
     if layer_fn is None:
         layer_fn = nn.Linear
     block = []
-    for i, (in_channels, out_channels) in enumerate(zip(channels[:-1], channels[1:])):
+    for i, (in_channels, out_channels) in enumerate(zip(channels[:-2], channels[1:-1])):
         block.append(layer_fn(in_channels, out_channels))
         if norm_type is not None:
             block.append(build_normalization(norm_type, dim=1)(out_channels))
@@ -295,6 +349,32 @@ def MLP(
             block.append(activation)
         if use_dropout:
             block.append(nn.Dropout(dropout_probability))
+
+    # the last layer
+    in_channels = channels[-2]
+    out_channels = channels[-1]
+    if output_activation is None and output_norm_type is None:
+        #  the last layer use the same norm and activation as front layers
+        block.append(layer_fn(in_channels, out_channels))
+        if norm_type is not None:
+            block.append(build_normalization(norm_type, dim=1)(out_channels))
+        if activation is not None:
+            block.append(activation)
+        if use_dropout:
+            block.append(nn.Dropout(dropout_probability))
+    else:
+        #  the last layer use the specific norm and activation
+        block.append(layer_fn(in_channels, out_channels))
+        if output_norm_type is not None:
+            block.append(build_normalization(output_norm_type, dim=1)(out_channels))
+        if output_activation is not None:
+            block.append(output_activation)
+        if use_dropout:
+            block.append(nn.Dropout(dropout_probability))
+        if last_linear_layer_init_zero:
+            block[-2].weight.data.fill_(0)
+            block[-2].bias.data.fill_(0)
+
     return sequential_pack(block)
 
 
@@ -369,7 +449,7 @@ def one_hot(val: torch.LongTensor, num: int, num_first: bool = False) -> torch.F
     # If the value is -1, then it should be converted to all zeros encodings and
     # the corresponding entry in index_neg_one is 1, which is used to transform
     # the ret after the operation of ret.scatter_(1, val_reshape, 1) to their correct encodings bellowing
-    index_neg_one = torch.eq(val_reshape, -1).long()
+    index_neg_one = torch.eq(val_reshape, -1).float()
     if index_neg_one.sum() != 0:  # if -1 exists in val
         # convert the original value -1 to 0
         val_reshape = torch.where(
@@ -601,7 +681,7 @@ class NaiveFlatten(nn.Module):
             return x.view(*x.shape[:self.start_dim], -1)
 
 
-if torch_gt_131():
+if torch_ge_131():
     Flatten = nn.Flatten
 else:
     Flatten = NaiveFlatten

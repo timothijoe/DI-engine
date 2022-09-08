@@ -1,16 +1,13 @@
-from copy import deepcopy
-from ding.entry import serial_pipeline
 from easydict import EasyDict
 
 pong_acer_config = dict(
     env=dict(
-        collector_env_num=16,
-        evaluator_env_num=4,
+        collector_env_num=8,
+        evaluator_env_num=8,
         n_evaluator_episode=8,
         stop_value=20,
         env_id='PongNoFrameskip-v4',
         frame_stack=4,
-        manager=dict(shared_memory=False, )
     ),
     policy=dict(
         cuda=True,
@@ -24,7 +21,7 @@ pong_acer_config = dict(
             actor_head_hidden_size=512,
             actor_head_layer_num=2,
         ),
-        unroll_len=32,
+        unroll_len=64,
         learn=dict(
             # (int) collect n_sample data, train model update_per_collect times
             # here we follow impala serial pipeline
@@ -35,7 +32,6 @@ pong_acer_config = dict(
             # clip_value=10,
             learning_rate_actor=0.0001,
             learning_rate_critic=0.0003,
-            # (float) loss weight of the value network, the weight of policy network is set to 1
             # (float) loss weight of the entropy regularization, the weight of policy network is set to 1
             entropy_weight=0.01,
             # (float) discount factor for future reward, defaults int [0, 1]
@@ -43,21 +39,17 @@ pong_acer_config = dict(
             # (float) additional discounting parameter
             trust_region=True,
             # (float) clip ratio of importance weights
-            # (float) clip ratio of importance weights
             c_clip_ratio=10,
         ),
         collect=dict(
             # (int) collect n_sample data, train model n_iteration times
-            n_sample=16,
+            n_sample=64,
             # (float) discount factor for future reward, defaults int [0, 1]
             discount_factor=0.9,
             collector=dict(collect_print_freq=1000, ),
         ),
         eval=dict(evaluator=dict(eval_freq=5000, )),
-        other=dict(replay_buffer=dict(
-            type='naive',
-            replay_buffer_size=10000,
-        ), ),
+        other=dict(replay_buffer=dict(replay_buffer_size=3000, ), ),
     ),
 )
 main_config = EasyDict(pong_acer_config)
@@ -73,4 +65,6 @@ pong_acer_create_config = dict(
 create_config = EasyDict(pong_acer_create_config)
 
 if __name__ == '__main__':
+    # or you can enter `ding -m serial -c pong_acer_config.py -s 0`
+    from ding.entry import serial_pipeline
     serial_pipeline((main_config, create_config), seed=0)

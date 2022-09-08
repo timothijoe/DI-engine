@@ -2,10 +2,11 @@ from collections.abc import Sequence, Mapping
 from typing import List, Dict, Union, Any
 
 import torch
+import treetensor.torch as ttorch
 import re
 from torch._six import string_classes
 import collections.abc as container_abcs
-from ding.compatibility import torch_gt_131
+from ding.compatibility import torch_ge_131
 
 int_classes = int
 np_str_obj_array_pattern = re.compile(r'[SaUO]')
@@ -14,6 +15,23 @@ default_collate_err_msg_format = (
     "default_collate: batch must contain tensors, numpy arrays, numbers, "
     "dicts or lists; found {}"
 )
+
+
+def ttorch_collate(x, json=False):
+
+    def inplace_fn(t):
+        for k in t.keys():
+            if isinstance(t[k], torch.Tensor):
+                if len(t[k].shape) == 2 and t[k].shape[1] == 1:  # reshape (B, 1) -> (B)
+                    t[k] = t[k].squeeze(-1)
+            else:
+                inplace_fn(t[k])
+
+    x = ttorch.stack(x)
+    inplace_fn(x)
+    if json:
+        x = x.json()
+    return x
 
 
 def default_collate(batch: Sequence,
@@ -48,10 +66,13 @@ def default_collate(batch: Sequence,
             the return dtype depends on the original element dtype, can be [torch.Tensor, Mapping, Sequence].
     """
     elem = batch[0]
+
     elem_type = type(elem)
+    if isinstance(batch, ttorch.Tensor):
+        return batch.json()
     if isinstance(elem, torch.Tensor):
         out = None
-        if torch_gt_131() and torch.utils.data.get_worker_info() is not None:
+        if torch_ge_131() and torch.utils.data.get_worker_info() is not None:
             # If we're in a background process, directly concatenate into a
             # shared memory tensor to avoid an extra copy
             numel = sum([x.numel() for x in batch])
@@ -63,6 +84,8 @@ def default_collate(batch: Sequence,
             # return torch.stack(batch, 0, out=out)
         else:
             return torch.stack(batch, 0, out=out)
+    elif isinstance(elem, ttorch.Tensor):
+        return ttorch_collate(batch, json=True)
     elif elem_type.__module__ == 'numpy' and elem_type.__name__ != 'str_' \
             and elem_type.__name__ != 'string_':
         if elem_type.__name__ == 'ndarray':
@@ -121,14 +144,22 @@ def timestep_collate(batch: List[Dict[str, Any]]) -> Dict[str, Union[torch.Tenso
             return data
 
     elem = batch[0]
-    assert isinstance(elem, container_abcs.Mapping), type(elem)
-    prev_state = [b.pop('prev_state') for b in batch]
-    batch_data = default_collate(batch)  # -> {some_key: T lists}, each list is [B, some_dim]
-    batch_data = stack(batch_data)  # -> {some_key: [T, B, some_dim]}
-    batch_data['prev_state'] = list(zip(*prev_state))  # permute batch size dim with sequence len dim
-    # append back prev_state, avoiding multi batch share the same data bug
-    for i in range(len(batch)):
-        batch[i]['prev_state'] = prev_state[i]
+    assert isinstance(elem, (container_abcs.Mapping, list)), type(elem)
+    if isinstance(batch[0], list):  # new pipeline + treetensor
+        prev_state = [[b[i].get('prev_state') for b in batch] for i in range(len(batch[0]))]
+        batch_data = ttorch.stack([ttorch_collate(b) for b in batch])  # (B, T, *)
+        del batch_data.prev_state
+        batch_data = batch_data.transpose(1, 0)
+        batch_data.prev_state = prev_state
+    else:
+        prev_state = [b.pop('prev_state') for b in batch]
+        batch_data = default_collate(batch)  # -> {some_key: T lists}, each list is [B, some_dim]
+        batch_data = stack(batch_data)  # -> {some_key: [T, B, some_dim]}
+        transformed_prev_state = list(zip(*prev_state))
+        batch_data['prev_state'] = transformed_prev_state
+        # append back prev_state, avoiding multi batch share the same data bug
+        for i in range(len(batch)):
+            batch[i]['prev_state'] = prev_state[i]
     return batch_data
 
 

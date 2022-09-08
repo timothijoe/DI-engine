@@ -1,8 +1,10 @@
 from typing import Dict, Any, Callable
 from collections import namedtuple
-import numpy as np
+from easydict import EasyDict
+import torch
 
 from ding.torch_utils import to_device
+import gym
 
 
 class PolicyFactory:
@@ -14,7 +16,7 @@ class PolicyFactory:
     @staticmethod
     def get_random_policy(
             policy: 'BasePolicy',  # noqa
-            action_space: 'EnvElementInfo' = None,  # noqa
+            action_space: 'gym.spaces.Space' = None,  # noqa
             forward_fn: Callable = None,
     ) -> None:
         assert not (action_space is None and forward_fn is None)
@@ -30,39 +32,25 @@ class PolicyFactory:
 
         def forward(data: Dict[int, Any], *args, **kwargs) -> Dict[int, Any]:
 
-            def discrete_random_action(min_val, max_val, shape):
-                action = np.random.randint(min_val, max_val, shape)
-                if len(action) > 1:
-                    action = list(np.expand_dims(action, axis=1))
-                return action
-
-            def continuous_random_action(min_val, max_val, shape):
-                bounded_below = min_val != float("inf")
-                bounded_above = max_val != float("inf")
-                unbounded = not bounded_below and not bounded_above
-                low_bounded = bounded_below and not bounded_above
-                upp_bounded = not bounded_below and bounded_above
-                bounded = bounded_below and bounded_above
-                assert sum([unbounded, low_bounded, upp_bounded, bounded]) == 1
-                if unbounded:
-                    return np.random.normal(size=unbounded[unbounded].shape)
-                if low_bounded:
-                    return np.random.exponential(size=shape) + min_val
-                if upp_bounded:
-                    return -np.random.exponential(size=shape) + max_val
-                if bounded:
-                    return np.random.uniform(low=min_val, high=max_val, size=shape)
-
             actions = {}
-            discrete = action_space.value['dtype'] == int or action_space.value['dtype'] == np.int64
-            min, max, shape = action_space.value['min'], action_space.value['max'], action_space.shape
             for env_id in data:
-                # For continuous env, action is limited in [-1, 1] for model output.
-                # Env would scale it to its original action range.
-                actions[env_id] = {
-                    'action': discrete_random_action(min, max, shape)
-                    if discrete else continuous_random_action(-1, 1, shape)
-                }
+                if not isinstance(action_space, list):
+                    action = torch.as_tensor(action_space.sample())
+                    if isinstance(action_space, gym.spaces.MultiDiscrete):
+                        action = [torch.LongTensor([v]) for v in action]
+                    actions[env_id] = {'action': action}
+                elif 'global_state' in data[env_id].keys():
+                    # for smac
+                    logit = torch.ones_like(data[env_id]['action_mask'])
+                    logit[data[env_id]['action_mask'] == 0.0] = -1e8
+                    dist = torch.distributions.categorical.Categorical(logits=torch.Tensor(logit))
+                    actions[env_id] = {'action': dist.sample(), 'logit': torch.as_tensor(logit)}
+                else:
+                    # for gfootball
+                    actions[env_id] = {
+                        'action': torch.as_tensor([action_space_agent.sample() for action_space_agent in action_space]),
+                        'logit': torch.ones([len(action_space), action_space[0].n])
+                    }
             return actions
 
         def reset(*args, **kwargs) -> None:
@@ -76,3 +64,11 @@ class PolicyFactory:
             return random_collect_function(
                 forward, policy.process_transition, policy.get_train_sample, reset, policy.get_attribute
             )
+
+
+def get_random_policy(cfg: EasyDict, policy: 'Policy.collect_mode', env: 'BaseEnvManager'):  # noqa
+    if cfg.policy.get('transition_with_policy_data', False):
+        return policy
+    else:
+        action_space = env.action_space
+        return PolicyFactory.get_random_policy(policy, action_space=action_space)

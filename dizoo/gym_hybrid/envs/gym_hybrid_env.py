@@ -5,9 +5,9 @@ import gym_hybrid
 import copy
 import numpy as np
 from easydict import EasyDict
-from ding.envs import BaseEnv, BaseEnvTimestep, BaseEnvInfo
-from ding.envs.common import EnvElementInfo, affine_transform
-from ding.torch_utils import to_ndarray, to_list
+from ding.envs import BaseEnv, BaseEnvTimestep
+from ding.envs.common import affine_transform
+from ding.torch_utils import to_ndarray
 from ding.utils import ENV_REGISTRY
 
 
@@ -27,10 +27,18 @@ class GymHybridEnv(BaseEnv):
         if not self._init_flag:
             self._env = gym.make(self._env_id)
             if self._replay_path is not None:
-                self._env = gym.wrappers.Monitor(
-                    self._env, self._replay_path, video_callable=lambda episode_id: True, force=True
+                self._env = gym.wrappers.RecordVideo(
+                    self._env,
+                    video_folder=self._replay_path,
+                    episode_trigger=lambda episode_id: True,
+                    name_prefix='rl-video-{}'.format(id(self))
                 )
                 self._env.metadata["render.modes"] = ["human", "rgb_array"]
+            self._observation_space = self._env.observation_space
+            self._action_space = self._env.action_space
+            self._reward_space = gym.spaces.Box(
+                low=self._env.reward_range[0], high=self._env.reward_range[1], shape=(1, ), dtype=np.float32
+            )
             self._init_flag = True
         if hasattr(self, '_seed') and hasattr(self, '_dynamic_seed') and self._dynamic_seed:
             np_seed = 100 * np.random.randint(1, 1000)
@@ -80,44 +88,13 @@ class GymHybridEnv(BaseEnv):
         info['action_args_mask'] = np.array([[1, 0], [0, 1], [0, 0]])
         return BaseEnvTimestep(obs, rew, done, info)
 
-    def get_random_action(self) -> Dict:
+    def random_action(self) -> Dict:
         # action_type: 0, 1, 2
         # action_args:
         #   - acceleration_value: [0, 1]
         #   - rotation_value: [-1, 1]
-        raw_action = self._env.action_space.sample()
+        raw_action = self._action_space.sample()
         return {'action_type': raw_action[0], 'action_args': raw_action[1]}
-
-    def info(self) -> BaseEnvInfo:
-        T = EnvElementInfo
-        return BaseEnvInfo(
-            agent_num=1,
-            obs_space=T(
-                (10, ),
-                {
-                    'min': -1,
-                    'max': 2,
-                    'dtype': np.float32,
-                },
-            ),
-            # [min, max)
-            act_space=T(
-                (3, ),
-                {
-                    'min': 0,
-                    'max': 3,
-                    'dtype': int,
-                },
-            ),
-            rew_space=T(
-                (1, ),
-                {
-                    'min': -1.0,
-                    'max': 1.0
-                },
-            ),
-            use_wrappers=None,
-        )
 
     def __repr__(self) -> str:
         return "DI-engine gym hybrid Env"
@@ -126,3 +103,15 @@ class GymHybridEnv(BaseEnv):
         if replay_path is None:
             replay_path = './video'
         self._replay_path = replay_path
+
+    @property
+    def observation_space(self) -> gym.spaces.Space:
+        return self._observation_space
+
+    @property
+    def action_space(self) -> gym.spaces.Space:
+        return self._action_space
+
+    @property
+    def reward_space(self) -> gym.spaces.Space:
+        return self._reward_space

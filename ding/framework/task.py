@@ -1,7 +1,7 @@
 from asyncio import InvalidStateError
 from asyncio.tasks import FIRST_EXCEPTION
-from collections import defaultdict
-import logging
+from collections import OrderedDict
+from threading import Lock
 import time
 import asyncio
 import concurrent.futures
@@ -11,6 +11,7 @@ from types import GeneratorType
 from typing import Any, Awaitable, Callable, Dict, Generator, Iterable, List, Optional, Set, Union
 from ding.framework.context import Context
 from ding.framework.parallel import Parallel
+from ding.framework.event_loop import EventLoop
 from functools import wraps
 
 
@@ -25,22 +26,22 @@ def enable_async(func: Callable) -> Callable:
     """
 
     @wraps(func)
-    def runtime_handler(task: "Task", *args, **kwargs) -> "Task":
+    def runtime_handler(task: "Task", *args, async_mode: Optional[bool] = None, **kwargs) -> "Task":
         """
         Overview:
             If task's async mode is enabled, execute the step in current loop executor asyncly,
             or execute the task sync.
         Arguments:
             - task (:obj:`Task`): The task instance.
+            - async_mode (:obj:`Optional[bool]`): Whether using async mode.
         Returns:
             - result (:obj:`Union[Any, Awaitable]`): The result or future object of middleware.
         """
-        if "async_mode" in kwargs:
-            async_mode = kwargs.pop("async_mode")
-        else:
+        if async_mode is None:
             async_mode = task.async_mode
         if async_mode:
-            t = task._loop.run_in_executor(task._thread_pool, func, task, *args, **kwargs)
+            assert not kwargs, "Should not use kwargs in async_mode, use position parameters, kwargs: {}".format(kwargs)
+            t = task._async_loop.run_in_executor(task._thread_pool, func, task, *args, **kwargs)
             task._async_stack.append(t)
             return task
         else:
@@ -51,47 +52,44 @@ def enable_async(func: Callable) -> Callable:
 
 class Task:
     """
-    Tash will manage the execution order of the entire pipeline, register new middleware,
+    Task will manage the execution order of the entire pipeline, register new middleware,
     and generate new context objects.
     """
 
-    def __init__(
+    def start(
             self,
             async_mode: bool = False,
             n_async_workers: int = 3,
-            middleware: Optional[List[Callable]] = None,
-            step_wrappers: Optional[List[Callable]] = None,
-            event_listeners: Optional[Dict[str, List]] = None,
-            once_listeners: Optional[Dict[str, List]] = None,
-            labels: Optional[Set[str]] = None,
-            **_
-    ) -> None:
+            ctx: Optional[Context] = None,
+            labels: Optional[Set[str]] = None
+    ) -> "Task":
+        # This flag can be modified by external or associated processes
         self._finish = False
-        self.middleware = middleware or []
-        self.step_wrappers = step_wrappers or []
-        self.ctx = Context()
-        self.parallel_ctx = Context()
-        self._backward_stack = []
+        # This flag can only be modified inside the class, it will be set to False in the end of stop
+        self._running = True
+        self._middleware = []
+        self._wrappers = []
+        self.ctx = ctx or Context()
+        self._backward_stack = OrderedDict()
+        # Bind event loop functions
+        self._event_loop = EventLoop("task_{}".format(id(self)))
 
         # Async segment
         self.async_mode = async_mode
         self.n_async_workers = n_async_workers
         self._async_stack = []
-        self._loop = None
+        self._async_loop = None
         self._thread_pool = None
         self._exception = None
-        self.event_listeners = event_listeners or defaultdict(list)
-        self.once_listeners = once_listeners or defaultdict(list)
+        self._thread_lock = Lock()
         self.labels = labels or set()
 
         # Parallel segment
         self.router = Parallel()
         if async_mode or self.router.is_active:
-            self._thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=n_async_workers)
-            self._loop = asyncio.new_event_loop()
+            self._activate_async()
 
         if self.router.is_active:
-            self.router.register_rpc("task._emit", self._emit)
 
             def sync_finish(value):
                 self._finish = value
@@ -99,6 +97,7 @@ class Task:
             self.on("finish", sync_finish)
 
         self.init_labels()
+        return self
 
     def init_labels(self):
         if self.async_mode:
@@ -111,26 +110,35 @@ class Task:
         else:
             self.labels.add("standalone")
 
-    def use(self, fn: Callable, filter_labels: Optional[Iterable[str]] = None) -> 'Task':
+    def use(self, fn: Callable, lock: Union[bool, Lock] = False) -> 'Task':
         """
         Overview:
             Register middleware to task. The middleware will be executed by it's registry order.
         Arguments:
             - fn (:obj:`Callable`): A middleware is a function with only one argument: ctx.
+            - lock (:obj:`Union[bool, Lock]`): There can only be one middleware execution under lock at any one time.
+        Returns:
+            - task (:obj:`Task`): The task.
         """
-        if not filter_labels or self.match_labels(filter_labels):
-            self.middleware.append(fn)
+        for wrapper in self._wrappers:
+            fn = wrapper(fn)
+        self._middleware.append(self.wrap(fn, lock=lock))
         return self
 
-    def use_step_wrapper(self, fn: Callable) -> 'Task':
+    def use_wrapper(self, fn: Callable) -> 'Task':
         """
         Overview:
             Register wrappers to task. A wrapper works like a decorator, but task will apply this \
             decorator on top of each middleware.
         Arguments:
             - fn (:obj:`Callable`): A wrapper is a decorator, so the first argument is a callable function.
+        Returns:
+            - task (:obj:`Task`): The task.
         """
-        self.step_wrappers.append(fn)
+        # Wrap exist middlewares
+        for i, middleware in enumerate(self._middleware):
+            self._middleware[i] = fn(middleware)
+        self._wrappers.append(fn)
         return self
 
     def match_labels(self, patterns: Union[Iterable[str], str]) -> bool:
@@ -144,7 +152,7 @@ class Task:
             patterns = [patterns]
         return any([fnmatch.filter(self.labels, p) for p in patterns])
 
-    def run(self, max_step: int = int(1e10)) -> None:
+    def run(self, max_step: int = int(1e12)) -> None:
         """
         Overview:
             Execute the iterations, when reach the max_step or task.finish is true,
@@ -152,10 +160,11 @@ class Task:
         Arguments:
             - max_step (:obj:`int`): Max step of iterations.
         """
-        if len(self.middleware) == 0:
+        assert self._running, "Please make sure the task is running before calling the this method, see the task.start"
+        if len(self._middleware) == 0:
             return
         for i in range(max_step):
-            for fn in self.middleware:
+            for fn in self._middleware:
                 self.forward(fn)
             # Sync should be called before backward, otherwise it is possible
             # that some generators have not been pushed to backward_stack.
@@ -168,77 +177,146 @@ class Task:
                 break
             self.renew()
 
-    @enable_async
-    def forward(self, fn: Callable, ctx: Context = None, backward_stack: List[Generator] = None) -> 'Task':
+    def wrap(self, fn: Callable, lock: Union[bool, Lock] = False) -> Callable:
         """
         Overview:
-            This function will execute the middleware until the first yield statment,
+            Wrap the middleware, make it can be called directly in other middleware.
+        Arguments:
+            - fn (:obj:`Callable`): The middleware.
+            - lock (:obj:`Union[bool, Lock]`): There can only be one middleware execution under lock at any one time.
+        Returns:
+            - fn_back (:obj:`Callable`): It will return a backward function, which will call the rest part of
+                the middleware after yield. If this backward function was not called, the rest part of the middleware
+                will be called in the global backward step.
+        """
+        if lock is True:
+            lock = self._thread_lock
+
+        @wraps(fn)
+        def forward(ctx: Context):
+            if lock:
+                with lock:
+                    g = self.forward(fn, ctx, async_mode=False)
+            else:
+                g = self.forward(fn, ctx, async_mode=False)
+
+            def backward():
+                backward_stack = OrderedDict()
+                key = id(g)
+                backward_stack[key] = self._backward_stack.pop(key)
+                if lock:
+                    with lock:
+                        self.backward(backward_stack, async_mode=False)
+                else:
+                    self.backward(backward_stack, async_mode=False)
+
+            return backward
+
+        return forward
+
+    @enable_async
+    def forward(self, fn: Callable, ctx: Optional[Context] = None) -> Optional[Generator]:
+        """
+        Overview:
+            This function will execute the middleware until the first yield statement,
             or the end of the middleware.
         Arguments:
             - fn (:obj:`Callable`): Function with contain the ctx argument in middleware.
+            - ctx (:obj:`Optional[Context]`): Replace global ctx with a customized ctx.
+        Returns:
+            - g (:obj:`Optional[Generator]`): The generator if the return value of fn is a generator.
         """
-        if not backward_stack:
-            backward_stack = self._backward_stack
+        assert self._running, "Please make sure the task is running before calling the this method, see the task.start"
         if not ctx:
             ctx = self.ctx
-        for wrapper in self.step_wrappers:
-            fn = wrapper(fn)
         g = fn(ctx)
         if isinstance(g, GeneratorType):
             try:
                 next(g)
-                backward_stack.append(g)
+                self._backward_stack[id(g)] = g
+                return g
             except StopIteration:
                 pass
-        return self
 
     @enable_async
-    def backward(self, backward_stack: List[Generator] = None) -> 'Task':
+    def backward(self, backward_stack: Optional[Dict[str, Generator]] = None) -> None:
         """
         Overview:
             Execute the rest part of middleware, by the reversed order of registry.
+        Arguments:
+            - backward_stack (:obj:`Optional[Dict[str, Generator]]`): Replace global backward_stack with a customized \
+                stack.
         """
+        assert self._running, "Please make sure the task is running before calling the this method, see the task.start"
         if not backward_stack:
             backward_stack = self._backward_stack
         while backward_stack:
             # FILO
-            g = backward_stack.pop()
+            _, g = backward_stack.popitem()
             try:
                 next(g)
             except StopIteration:
                 continue
-        return self
 
-    def sequence(self, *fns: List[Callable]) -> Callable:
+    def serial(self, *fns: List[Callable]) -> Callable:
         """
         Overview:
-            Wrap functions and keep them run in sequence, Usually in order to avoid the confusion
+            Wrap functions and keep them run in serial, Usually in order to avoid the confusion
             of dependencies in async mode.
         Arguments:
-            - fn (:obj:`Callable`): Chain a sequence of middleware, wrap them into one middleware function.
+            - fn (:obj:`Callable`): Chain a serial of middleware, wrap them into one middleware function.
         """
 
-        def _sequence(ctx):
-            backward_stack = []
+        def _serial(ctx):
+            backward_keys = []
             for fn in fns:
-                self.forward(fn, ctx=ctx, backward_stack=backward_stack, async_mode=False)
+                g = self.forward(fn, ctx, async_mode=False)
+                if isinstance(g, GeneratorType):
+                    backward_keys.append(id(g))
             yield
+            backward_stack = OrderedDict()
+            for k in backward_keys:
+                backward_stack[k] = self._backward_stack.pop(k)
             self.backward(backward_stack=backward_stack, async_mode=False)
 
         name = ",".join([fn.__name__ for fn in fns])
-        _sequence.__name__ = "sequence<{}>".format(name)
-        return _sequence
+        _serial.__name__ = "serial<{}>".format(name)
+        return _serial
+
+    def parallel(self, *fns: List[Callable]) -> Callable:
+        """
+        Overview:
+            Wrap functions and keep them run in parallel, should not use this funciton in async mode.
+        Arguments:
+            - fn (:obj:`Callable`): Parallelized middleware, wrap them into one middleware function.
+        """
+        self._activate_async()
+
+        def _parallel(ctx):
+            backward_keys = []
+            for fn in fns:
+                g = self.forward(fn, ctx, async_mode=True)
+                if isinstance(g, GeneratorType):
+                    backward_keys.append(id(g))
+            self.sync()
+            yield
+            backward_stack = OrderedDict()
+            for k in backward_keys:
+                backward_stack[k] = self._backward_stack.pop(k)
+            self.backward(backward_stack, async_mode=True)
+            self.sync()
+
+        name = ",".join([fn.__name__ for fn in fns])
+        _parallel.__name__ = "parallel<{}>".format(name)
+        return _parallel
 
     def renew(self) -> 'Task':
         """
         Overview:
             Renew the context instance, this function should be called after backward in the end of iteration.
         """
-        # Renew context
-        old_ctx = self.ctx
-        new_ctx = old_ctx.renew()
-        new_ctx.total_step = old_ctx.total_step + 1
-        self.ctx = new_ctx
+        assert self._running, "Please make sure the task is running before calling the this method, see the task.start"
+        self.ctx = self.ctx.renew()
         return self
 
     def __enter__(self) -> "Task":
@@ -252,21 +330,24 @@ class Task:
         Overview:
             Stop and cleanup every thing in the runtime of task.
         """
-        self.emit("exit", only_local=True)
         if self._thread_pool:
             self._thread_pool.shutdown()
+        self._event_loop.stop()
+        self.router.off(self._wrap_event_name("*"))
+        if self._async_loop:
+            self._async_loop.stop()
+            self._async_loop.close()
         # The middleware and listeners may contain some methods that reference to task,
         # If we do not clear them after the task exits, we may find that gc will not clean up the task object.
-        self.middleware.clear()
-        self.event_listeners.clear()
-        self.once_listeners.clear()
-        self.step_wrappers.clear()
+        self._middleware.clear()
+        self._wrappers.clear()
         self._backward_stack.clear()
         self._async_stack.clear()
+        self._running = False
 
     def sync(self) -> 'Task':
-        if self._loop:
-            self._loop.run_until_complete(self.sync_tasks())
+        if self._async_loop:
+            self._async_loop.run_until_complete(self.sync_tasks())
         return self
 
     async def sync_tasks(self) -> Awaitable[None]:
@@ -290,12 +371,12 @@ class Task:
         Arguments:
             - fn (:obj:`Callable`): Synchronization fuction.
         """
-        if not self._loop:
+        if not self._async_loop:
             raise Exception("Event loop was not initialized, please call this function in async or parallel mode")
-        t = self._loop.run_in_executor(self._thread_pool, fn, *args, **kwargs)
+        t = self._async_loop.run_in_executor(self._thread_pool, fn, *args, **kwargs)
         self._async_stack.append(t)
 
-    def emit(self, event: str, *args, **kwargs) -> None:
+    def emit(self, event: str, *args, only_remote: bool = False, only_local: bool = False, **kwargs) -> None:
         """
         Overview:
             Emit an event, call listeners.
@@ -306,26 +387,16 @@ class Task:
             - args (:obj:`any`): Rest arguments for listeners.
         """
         # Check if need to broadcast event to connected nodes, default is True
-        if kwargs.get("only_local"):
-            kwargs.pop("only_local")
-            self._emit(event, *args, **kwargs)
-        elif kwargs.get("only_remote"):
-            kwargs.pop("only_remote")
+        assert self._running, "Please make sure the task is running before calling the this method, see the task.start"
+        if only_local:
+            self._event_loop.emit(event, *args, **kwargs)
+        elif only_remote:
             if self.router.is_active:
-                self.async_executor(self.router.send_rpc, "task._emit", event, *args, **kwargs)
+                self.async_executor(self.router.emit, self._wrap_event_name(event), event, *args, **kwargs)
         else:
             if self.router.is_active:
-                self.async_executor(self.router.send_rpc, "task._emit", event, *args, **kwargs)
-            self._emit(event, *args, **kwargs)
-
-    def _emit(self, event: str, *args, **kwargs) -> None:
-        if event in self.event_listeners:
-            for fn in self.event_listeners[event]:
-                fn(*args, **kwargs)
-        if event in self.once_listeners:
-            while self.once_listeners[event]:
-                fn = self.once_listeners[event].pop()
-                fn(*args, **kwargs)
+                self.async_executor(self.router.emit, self._wrap_event_name(event), event, *args, **kwargs)
+            self._event_loop.emit(event, *args, **kwargs)
 
     def on(self, event: str, fn: Callable) -> None:
         """
@@ -335,7 +406,9 @@ class Task:
             - event (:obj:`str`): Event name.
             - fn (:obj:`Callable`): The function.
         """
-        self.event_listeners[event].append(fn)
+        self._event_loop.on(event, fn)
+        if self.router.is_active:
+            self.router.on(self._wrap_event_name(event), self._event_loop.emit)
 
     def once(self, event: str, fn: Callable) -> None:
         """
@@ -345,7 +418,21 @@ class Task:
             - event (:obj:`str`): Event name.
             - fn (:obj:`Callable`): The function.
         """
-        self.once_listeners[event].append(fn)
+        self._event_loop.once(event, fn)
+        if self.router.is_active:
+            self.router.on(self._wrap_event_name(event), self._event_loop.emit)
+
+    def off(self, event: str, fn: Optional[Callable] = None) -> None:
+        """
+        Overview:
+            Unsubscribe an event
+        Arguments:
+            - event (:obj:`str`): Event name.
+            - fn (:obj:`Callable`): The function.
+        """
+        self._event_loop.off(event, fn)
+        if self.router.is_active:
+            self.router.off(self._wrap_event_name(event))
 
     def wait_for(self, event: str, timeout: float = math.inf, ignore_timeout_exception: bool = True) -> Any:
         """
@@ -356,6 +443,7 @@ class Task:
             - timeout (:obj:`float`): Timeout in seconds.
             - ignore_timeout_exception (:obj:`bool`): If this is False, an exception will occur when meeting timeout.
         """
+        assert self._running, "Please make sure the task is running before calling the this method, see the task.start"
         received = False
         result = None
 
@@ -377,9 +465,6 @@ class Task:
         else:
             raise TimeoutError("Timeout when waiting for event: {}".format(event))
 
-    def __copy__(self):
-        return Task(**self.__dict__)
-
     @property
     def finish(self):
         return self._finish
@@ -389,3 +474,21 @@ class Task:
         self._finish = value
         if self.router.is_active and value is True:
             self.emit("finish", value)
+
+    def _wrap_event_name(self, event: str) -> str:
+        """
+        Overview:
+            Wrap the event name sent to the router.
+        Arguments:
+            - event (:obj:`str`): Event name
+        """
+        return "task.{}".format(event)
+
+    def _activate_async(self):
+        if not self._thread_pool:
+            self._thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=self.n_async_workers)
+        if not self._async_loop:
+            self._async_loop = asyncio.new_event_loop()
+
+
+task = Task()

@@ -23,6 +23,11 @@ class InteractionSerialEvaluator(ISerialEvaluator):
     config = dict(
         # Evaluate every "eval_freq" training iterations.
         eval_freq=1000,
+        render=dict(
+            # tensorboard video render is disabled by default
+            render_freq=-1,
+            mode='train_iter',
+        )
     )
 
     def __init__(
@@ -58,6 +63,9 @@ class InteractionSerialEvaluator(ISerialEvaluator):
         self._timer = EasyTimer()
         self._default_n_episode = cfg.n_episode
         self._stop_value = cfg.stop_value
+        # only one freq
+        self._render = cfg.render
+        assert self._render.mode in ('envstep', 'train_iter'), 'mode should be envstep or train_iter'
 
     def reset_env(self, _env: Optional[BaseEnvManager] = None) -> None:
         """
@@ -114,6 +122,7 @@ class InteractionSerialEvaluator(ISerialEvaluator):
         self._max_eval_reward = float("-inf")
         self._last_eval_iter = -1
         self._end_flag = False
+        self._last_render_iter = -1
 
     def close(self) -> None:
         """
@@ -149,13 +158,23 @@ class InteractionSerialEvaluator(ISerialEvaluator):
         self._last_eval_iter = train_iter
         return True
 
+    def _should_render(self, envstep, train_iter):
+        if self._render.render_freq == -1:
+            return False
+        iter = envstep if self._render.mode == 'envstep' else train_iter
+        if (iter - self._last_render_iter) < self._render.render_freq:
+            return False
+        self._last_render_iter = iter
+        return True
+
     def eval(
             self,
             save_ckpt_fn: Callable = None,
             train_iter: int = -1,
             envstep: int = -1,
-            n_episode: Optional[int] = None
-    ) -> Tuple[bool, float]:
+            n_episode: Optional[int] = None,
+            force_render: bool = False,
+    ) -> Tuple[bool, dict]:
         '''
         Overview:
             Evaluate policy and store the best policy based on whether it reaches the highest historical reward.
@@ -166,21 +185,30 @@ class InteractionSerialEvaluator(ISerialEvaluator):
             - n_episode (:obj:`int`): Number of evaluation episodes.
         Returns:
             - stop_flag (:obj:`bool`): Whether this training program can be ended.
-            - eval_reward (:obj:`float`): Current eval_reward.
+            - return_info (:obj:`dict`): Current evaluation return information.
         '''
         if n_episode is None:
             n_episode = self._default_n_episode
         assert n_episode is not None, "please indicate eval n_episode"
         envstep_count = 0
         info = {}
+        return_info = []
         eval_monitor = VectorEvalMonitor(self._env.env_num, n_episode)
         self._env.reset()
         self._policy.reset()
+
+        # force_render overwrite frequency constraint
+        render = force_render or self._should_render(envstep, train_iter)
 
         with self._timer:
             while not eval_monitor.is_finished():
                 obs = self._env.ready_obs
                 obs = to_tensor(obs, dtype=torch.float32)
+
+                # update videos
+                if render:
+                    eval_monitor.update_video(self._env.ready_imgs)
+
                 policy_output = self._policy.forward(obs)
                 actions = {i: a['action'] for i, a in policy_output.items()}
                 actions = to_ndarray(actions)
@@ -198,6 +226,7 @@ class InteractionSerialEvaluator(ISerialEvaluator):
                         if 'episode_info' in t.info:
                             eval_monitor.update_info(env_id, t.info['episode_info'])
                         eval_monitor.update_reward(env_id, reward)
+                        return_info.append(t.info)
                         self._logger.info(
                             "[EVALUATOR]env {} finish episode, final reward: {}, current episode: {}".format(
                                 env_id, eval_monitor.get_latest_reward(env_id), eval_monitor.get_current_episode()
@@ -233,6 +262,14 @@ class InteractionSerialEvaluator(ISerialEvaluator):
                 continue
             self._tb_logger.add_scalar('{}_iter/'.format(self._instance_name) + k, v, train_iter)
             self._tb_logger.add_scalar('{}_step/'.format(self._instance_name) + k, v, envstep)
+
+        if render:
+            video_title = '{}_{}/'.format(self._instance_name, self._render.mode)
+            videos = eval_monitor.get_video()
+            render_iter = envstep if self._render.mode == 'envstep' else train_iter
+            from ding.utils import fps
+            self._tb_logger.add_video(video_title, videos, render_iter, fps(self._env))
+
         eval_reward = np.mean(episode_reward)
         if eval_reward > self._max_eval_reward:
             if save_ckpt_fn:
@@ -245,4 +282,4 @@ class InteractionSerialEvaluator(ISerialEvaluator):
                 "Current eval_reward: {} is greater than stop_value: {}".format(eval_reward, self._stop_value) +
                 ", so your RL agent is converged, you can refer to 'log/evaluator/evaluator_logger.txt' for details."
             )
-        return stop_flag, eval_reward
+        return stop_flag, return_info

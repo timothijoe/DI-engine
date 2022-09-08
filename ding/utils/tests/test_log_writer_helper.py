@@ -5,15 +5,15 @@ import shutil
 import os
 from os import path
 from ding.framework import Parallel
-from ding.framework.task import Task
+from ding.framework.task import task
 from ding.utils import DistributedWriter
 
 
 def main_distributed_writer(tempdir):
-    with Task() as task:
+    with task.start():
         time.sleep(task.router.node_id * 1)  # Sleep 0 and 1, write to different files
 
-        tblogger = DistributedWriter(tempdir).plugin(task, is_writer=("node.0" in task.labels))
+        tblogger = DistributedWriter(tempdir).plugin(task.router, is_writer=(task.router.node_id == 0))
 
         def _add_scalar(ctx):
             n = 10
@@ -22,7 +22,7 @@ def main_distributed_writer(tempdir):
 
         task.use(_add_scalar)
         task.use(lambda _: time.sleep(0.2))
-        task.run(max_step=10)
+        task.run(max_step=3)
 
         time.sleep(0.3 + (1 - task.router.node_id) * 2)
 

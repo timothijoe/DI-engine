@@ -1,18 +1,16 @@
 from types import MethodType
-from typing import Union, Any, List, Callable, Dict, Optional
+from typing import Union, Any, List, Callable, Dict, Optional, Tuple
 from functools import partial, wraps
 from easydict import EasyDict
 import copy
 import platform
-from collections import namedtuple
 import numbers
-import logging
+from ditk import logging
 import enum
 import time
-import traceback
-from ding.utils import ENV_MANAGER_REGISTRY, import_module, one_time_warning
-from ding.envs.env.base_env import BaseEnvTimestep
-from ding.utils.time_helper import WatchDog
+import treetensor.numpy as tnp
+from ding.utils import ENV_MANAGER_REGISTRY, import_module, one_time_warning, make_key_as_identifier, WatchDog
+from ding.envs.env import BaseEnvTimestep
 
 
 class EnvState(enum.IntEnum):
@@ -22,6 +20,7 @@ class EnvState(enum.IntEnum):
     RESET = 3
     DONE = 4
     ERROR = 5
+    NEED_RESET = 6
 
 
 def timeout_wrapper(func: Callable = None, timeout: Optional[int] = None) -> Callable:
@@ -63,9 +62,10 @@ class BaseEnvManager(object):
     Overview:
         Create a BaseEnvManager to manage multiple environments.
     Interfaces:
-        reset, step, seed, close, enable_save_replay, launch, env_info, default_config
+        reset, step, seed, close, enable_save_replay, launch, default_config, env_state_done
     Properties:
-        env_num, ready_obs, done, method_name_list，active_env
+        env_num, ready_obs, done, method_name_list
+        observation_space, action_space, reward_space
     """
 
     @classmethod
@@ -103,6 +103,21 @@ class BaseEnvManager(object):
         self._env_replay_path = None
         # env_ref is used to acquire some common attributes of env, like obs_shape and act_shape
         self._env_ref = self._env_fn[0]()
+        try:
+            self._observation_space = self._env_ref.observation_space
+            self._action_space = self._env_ref.action_space
+            self._reward_space = self._env_ref.reward_space
+        except:
+            # For some environment,
+            # we have to reset before getting observation description.
+            # However, for dmc-mujoco, we should not reset the env at the main thread,
+            # when using in a subprocess mode, which would cause opengl rendering bugs,
+            # leading to no response subprocesses.
+            self._env_ref.reset()
+            self._observation_space = self._env_ref.observation_space
+            self._action_space = self._env_ref.action_space
+            self._reward_space = self._env_ref.reward_space
+            self._env_ref.close()
         self._env_states = {i: EnvState.VOID for i in range(self._env_num)}
         self._env_seed = {i: None for i in range(self._env_num)}
 
@@ -120,17 +135,54 @@ class BaseEnvManager(object):
         return self._env_num
 
     @property
+    def env_ref(self) -> int:
+        return self._env_ref
+
+    @property
+    def observation_space(self) -> 'gym.spaces.Space':  # noqa
+        return self._observation_space
+
+    @property
+    def action_space(self) -> 'gym.spaces.Space':  # noqa
+        return self._action_space
+
+    @property
+    def reward_space(self) -> 'gym.spaces.Space':  # noqa
+        return self._reward_space
+
+    @property
     def ready_obs(self) -> Dict[int, Any]:
         """
         Overview:
-            Get the next observations(in ``np.ndarray`` type) and corresponding env id.
+            Get the ready (next) observation, which is uniform for both aysnc/sync scenarios.
         Return:
-            A dictionary with observations and their environment IDs.
+            - ready_obs (:obj:`Dict[int, Any]:`): Dict with env_id keys and observation values.
         Example:
-            >>>     obs_dict = env_manager.ready_obs
-            >>>     actions_dict = {env_id: model.forward(obs) for env_id, obs in obs_dict.items())}
+            >>> obs = env_manager.ready_obs
+            >>> stacked_obs = np.concatenate(list(obs.values()))
+            >>> action = model(obs)  # model input np obs and output np action
+            >>> action = {env_id: a for env_id, a in zip(obs.keys(), action)}
+            >>> timesteps = env_manager.step(action)
         """
-        return {i: self._ready_obs[i] for i in range(self.env_num) if self._env_episode_count[i] < self._episode_num}
+        active_env = [i for i, s in self._env_states.items() if s == EnvState.RUN]
+        return {i: self._ready_obs[i] for i in active_env}
+
+    @property
+    def ready_obs_id(self) -> List[int]:
+        # In BaseEnvManager, if env_episode_count equals episode_num, this env is done.
+        return [i for i, s in self._env_states.items() if s == EnvState.RUN]
+
+    @property
+    def ready_imgs(self, render_mode: Optional[str] = 'rgb_array') -> Dict[int, Any]:
+        """
+        Overview:
+            Get the next ready renderd frame and corresponding env id.
+        Return:
+            - ready_imgs (:obj:`Dict[int, np.ndarray]:`): Dict with env_id keys and rendered frames.
+        """
+        from ding.utils import render
+        assert render_mode in ['rgb_array', 'depth_array']
+        return {i: render(self._envs[i], render_mode) for i in self.ready_obs.keys()}
 
     @property
     def done(self) -> bool:
@@ -138,11 +190,10 @@ class BaseEnvManager(object):
 
     @property
     def method_name_list(self) -> list:
-        return ['reset', 'step', 'seed', 'close', 'enable_save_replay']
+        return ['reset', 'step', 'seed', 'close', 'enable_save_replay', 'render']
 
-    @property
-    def active_env(self) -> List[int]:
-        return [i for i, s in self._env_states.items() if s == EnvState.RUN]
+    def env_state_done(self, env_id: int) -> bool:
+        return self._env_states[env_id] == EnvState.DONE
 
     def __getattr__(self, key: str) -> Any:
         """
@@ -183,8 +234,6 @@ class BaseEnvManager(object):
         self._env_episode_count = {i: 0 for i in range(self.env_num)}
         self._ready_obs = {i: None for i in range(self.env_num)}
         self._envs = [e() for e in self._env_fn]
-        # env_ref is used to acquire some common attributes of env, like obs_shape and act_shape
-        self._env_ref = self._envs[0]
         assert len(self._envs) == self._env_num
         self._reset_param = {i: {} for i in range(self.env_num)}
         self._env_states = {i: EnvState.INIT for i in range(self.env_num)}
@@ -222,7 +271,6 @@ class BaseEnvManager(object):
             if self._env_replay_path is not None and self._env_states[env_id] == EnvState.RUN:
                 logging.warning("please don't reset a unfinished env when you enable save replay, we just skip it")
                 continue
-            self._env_states[env_id] = EnvState.RESET
             self._reset(env_id)
 
     def _reset(self, env_id: int) -> None:
@@ -239,6 +287,7 @@ class BaseEnvManager(object):
         exceptions = []
         for _ in range(self._max_retry):
             try:
+                self._env_states[env_id] = EnvState.RESET
                 obs = reset_fn()
                 self._ready_obs[env_id] = obs
                 self._env_states[env_id] = EnvState.RUN
@@ -263,25 +312,20 @@ class BaseEnvManager(object):
         runtime_error.__traceback__ = exceptions[-1].__traceback__
         raise runtime_error
 
-    def step(self, actions: Dict[int, Any]) -> Dict[int, namedtuple]:
+    def step(self, actions: Dict[int, Any]) -> List[Dict[int, BaseEnvTimestep]]:
         """
         Overview:
-            Step all environments. Reset an env if done.
+            Execute env step according to input actions. And reset an env if done.
         Arguments:
-            - actions (:obj:`Dict[int, Any]`): {env_id: action}
+            - actions (:obj:`Dict[int, Any]`): actions came from outer caller like policy
         Returns:
-            - timesteps (:obj:`Dict[int, namedtuple]`): {env_id: timestep}. Timestep is a \
-                ``BaseEnvTimestep`` tuple with observation, reward, done, env_info.
+            - timesteps (:obj:`List[Dict[int, BaseEnvTimestep]]`): Each timestep is a BaseEnvTimestep object, \
+                usually including observation, reward, done, info.
         Example:
-            >>>     actions_dict = {env_id: model.forward(obs) for env_id, obs in obs_dict.items())}
-            >>>     timesteps = env_manager.step(actions_dict):
-            >>>     for env_id, timestep in timesteps.items():
-            >>>         pass
-
-        .. note:
-
-            - The env_id that appears in ``actions`` will also be returned in ``timesteps``.
-            - Once an environment is done, it is reset immediately.
+            >>> timesteps = env_manager.step(action)
+            >>> for i, timestep in enumerate(timesteps):
+            >>>     if timestep.done:
+            >>>         print('Env {} is done'.format(timestep.env_id))
         """
         self._check_closed()
         timesteps = {}
@@ -289,16 +333,18 @@ class BaseEnvManager(object):
             timesteps[env_id] = self._step(env_id, act)
             if timesteps[env_id].done:
                 self._env_episode_count[env_id] += 1
-                if self._env_episode_count[env_id] < self._episode_num and self._auto_reset:
-                    self._env_states[env_id] = EnvState.RESET
-                    self._reset(env_id)
+                if self._env_episode_count[env_id] < self._episode_num:
+                    if self._auto_reset:
+                        self._reset(env_id)
+                    else:
+                        self._env_states[env_id] = EnvState.NEED_RESET
                 else:
                     self._env_states[env_id] = EnvState.DONE
             else:
                 self._ready_obs[env_id] = timesteps[env_id].obs
         return timesteps
 
-    def _step(self, env_id: int, act: Any) -> namedtuple:
+    def _step(self, env_id: int, act: Any) -> BaseEnvTimestep:
 
         @timeout_wrapper(timeout=self._step_timeout)
         def step_fn():
@@ -342,6 +388,10 @@ class BaseEnvManager(object):
         else:
             raise TypeError("invalid seed arguments type: {}".format(type(seed)))
         self._env_dynamic_seed = dynamic_seed
+        try:
+            self._action_space.seed(seed[0])
+        except Exception:  # TODO(nyz) deal with nested action_space like SMAC
+            pass
 
     def enable_save_replay(self, replay_path: Union[List[str], str]) -> None:
         """
@@ -362,21 +412,60 @@ class BaseEnvManager(object):
         """
         if self._closed:
             return
-        self._env_ref.close()
         for env in self._envs:
             env.close()
         for i in range(self._env_num):
             self._env_states[i] = EnvState.VOID
         self._closed = True
 
-    def env_info(self) -> namedtuple:
+    @property
+    def closed(self) -> bool:
+        return self._closed
+
+
+@ENV_MANAGER_REGISTRY.register('base_v2')
+class BaseEnvManagerV2(BaseEnvManager):
+    """
+    Overview:
+        BaseEnvManager for new task pipeline and interfaces coupled with treetensor.
+    """
+
+    @property
+    def ready_obs(self) -> tnp.array:
         """
         Overview:
-            Get one env's info, for example, action space, observation space, reward space, etc.
-        Returnns:
-            - info (:obj:`namedtuple`): Usually a namedtuple ``BaseEnvInfo``, each element is ``EnvElementInfo``.
+            Get the ready (next) observation in ``tnp.array`` type, which is uniform for both async/sync scenarios.
+        Return:
+            - ready_obs (:obj:`tnp.array`): A stacked treenumpy-type observation data.
+        Example:
+            >>> obs = env_manager.ready_obs
+            >>> action = model(obs)  # model input np obs and output np action
+            >>> timesteps = env_manager.step(action)
         """
-        return self._env_ref.info()
+        active_env = [i for i, s in self._env_states.items() if s == EnvState.RUN]
+        obs = [self._ready_obs[i] for i in active_env]
+        return tnp.stack(obs)
+
+    def step(self, actions: List[tnp.ndarray]) -> List[tnp.ndarray]:
+        """
+        Overview:
+            Execute env step according to input actions. And reset an env if done.
+        Arguments:
+            - actions (:obj:`List[tnp.ndarray]`): actions came from outer caller like policy
+        Returns:
+            - timesteps (:obj:`List[tnp.ndarray]`): Each timestep is a tnp.array with observation, reward, done, \
+                info, env_id.
+        """
+        actions = {env_id: a for env_id, a in zip(self.ready_obs_id, actions)}
+        timesteps = super().step(actions)
+        new_data = []
+        for env_id, timestep in timesteps.items():
+            obs, reward, done, info = timestep
+            # make the type and content of key as similar as identifier,
+            # in order to call them as attribute (e.g. timestep.xxx), such as ``TimeLimit.truncated`` in cartpole info
+            info = make_key_as_identifier(info)
+            new_data.append(tnp.array({'obs': obs, 'reward': reward, 'done': done, 'info': info, 'env_id': env_id}))
+        return new_data
 
 
 def create_env_manager(manager_cfg: dict, env_fn: List[Callable]) -> BaseEnvManager:

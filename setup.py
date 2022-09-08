@@ -46,19 +46,21 @@ setup(
     },
     python_requires=">=3.6",
     install_requires=[
-        'numpy>=1.10',
+        'numpy>=1.18.0',
         'requests>=2.25.1',
         'six',
         'gym==0.20.0',  # pypy incompatible
         'torch>=1.1.0,<=1.10.0',  # PyTorch 1.10.0 is available, if some errors, you need to do something like https://github.com/opendilab/DI-engine/discussions/81
         'pyyaml<6.0',
         'easydict==1.9',
+        'protobuf<=3.20.1',
         'tensorboardX>=2.1,<=2.2',
         'matplotlib',  # pypy incompatible
         'seaborn',
         'yapf==0.29.0',
         'responses~=0.12.1',
         'flask~=1.1.2',
+        'MarkupSafe<=2.0.1',
         'lz4',
         'cloudpickle',
         'tabulate',
@@ -67,25 +69,33 @@ setup(
         'URLObject~=2.4.3',
         'urllib3>=1.26.5',
         'readerwriterlock',
-        'namedlist',
         'opencv-python',  # pypy incompatible
         'enum_tools',
         'scipy',
         'trueskill',
         'h5py',
         'rich',
-        'mpire',
-        'pynng'
+        'mpire>=2.3.5',
+        'pynng',
+        'pettingzoo==1.12.0',
+        'pyglet>=1.4.0',
+        'redis',
+        'DI-treetensor>=0.2.1',
+        'DI-toolkit>=0.0.2',
+        'hbutils>=0.5.0',
+        'moviepy',
+        'hbutils',
     ],
     extras_require={
         'test': [
-            'pytest==5.1.1',
-            'pytest-xdist==1.31.0',
-            'pytest-cov==2.8.1',
-            'pytest-forked~=1.3.0',
-            'pytest-mock~=3.3.1',
-            'pytest-rerunfailures~=9.1.1',
-            'pytest-timeouts~=1.2.1',
+            'coverage>=5',
+            'mock>=4.0.3',
+            'pytest~=6.2.5',
+            'pytest-cov~=3.0.0',
+            'pytest-mock~=3.6.1',
+            'pytest-xdist>=1.34.0',
+            'pytest-rerunfailures~=10.2',
+            'pytest-timeout~=2.0.2',
         ],
         'style': [
             'yapf==0.29.0',
@@ -101,13 +111,10 @@ setup(
         ],
         'common_env': [
             'ale-py==0.7.0',  # atari
+            'autorom',
             'box2d-py',
             'cmake>=3.18.4',
             'opencv-python',  # pypy incompatible
-        ],
-        'sumo_env': [
-            'sumolib',
-            'traci',
         ],
         'gfootball_env': [
             'gfootball',
@@ -138,25 +145,24 @@ setup(
         # 'gym_soccer_env': [
         #     'gym-soccer @ git+https://github.com/LikeJulia/gym-soccer@dev-install-packages#egg=gym-soccer',
         # ],
-        'sc2_env': [
-            'absl-py>=0.1.0',
-            'future',
-            'futures; python_version == "2.7"',
-            'mpyq',
-            'mock',
-            'portpicker>=1.2.0',
-            'websocket-client',
-            'protobuf>=2.6',
-            'sk-video',  # pypy incompatible
-            'whichcraft',
-            'joblib',
-        ],
         'slimevolleygym_env': [
             'slimevolleygym',
         ],
+        'smac_env': [
+            'pysc2',
+        ],
         'k8s': [
             'kubernetes',
-        ]
+        ],
+        'envpool': [
+            'envpool',
+        ],
+        # 'dmc2gym': [
+        #    'dmc2gym @ git+https://github.com/denisyarats/dmc2gym@master#egg=dmc2gym',
+        # ],
+        'sokoban': [
+            'gym-sokoban',
+        ],
     },
     entry_points={'console_scripts': ['ding=ding.entry.cli:cli', 'ditask=ding.entry.cli_ditask:cli_ditask']},
     classifiers=[

@@ -1,7 +1,7 @@
 from typing import Union, Optional, List, Any, Tuple
 import os
 import torch
-import logging
+from ditk import logging
 from functools import partial
 from tensorboardX import SummaryWriter
 
@@ -19,11 +19,12 @@ def serial_pipeline(
         seed: int = 0,
         env_setting: Optional[List[Any]] = None,
         model: Optional[torch.nn.Module] = None,
-        max_iterations: Optional[int] = int(1e10),
+        max_train_iter: Optional[int] = int(1e10),
+        max_env_step: Optional[int] = int(1e10),
 ) -> 'Policy':  # noqa
     """
     Overview:
-        Serial pipeline entry.
+        Serial pipeline entry for off-policy RL.
     Arguments:
         - input_cfg (:obj:`Union[str, Tuple[dict, dict]]`): Config in dict type. \
             ``str`` type means config file path. \
@@ -32,8 +33,8 @@ def serial_pipeline(
         - env_setting (:obj:`Optional[List[Any]]`): A list with 3 elements: \
             ``BaseEnv`` subclass, collector env config, and evaluator env config.
         - model (:obj:`Optional[torch.nn.Module]`): Instance of torch.nn.Module.
-        - max_iterations (:obj:`Optional[torch.nn.Module]`): Learner's max iteration. Pipeline will stop \
-            when reaching this iteration.
+        - max_train_iter (:obj:`Optional[int]`): Maximum policy update iterations in training.
+        - max_env_step (:obj:`Optional[int]`): Maximum collected environment interaction steps.
     Returns:
         - policy (:obj:`Policy`): Converged policy.
     """
@@ -82,22 +83,15 @@ def serial_pipeline(
     # Accumulate plenty of data at the beginning of training.
     if cfg.policy.get('random_collect_size', 0) > 0:
         random_collect(cfg.policy, policy, collector, collector_env, commander, replay_buffer)
-    for _ in range(max_iterations):
+    while True:
         collect_kwargs = commander.step()
         # Evaluate policy performance
         if evaluator.should_eval(learner.train_iter):
-            stop, reward = evaluator.eval(learner.save_checkpoint, learner.train_iter, collector.envstep)
+            stop, eval_info = evaluator.eval(learner.save_checkpoint, learner.train_iter, collector.envstep)
             if stop:
                 break
         # Collect data by default config n_sample/n_episode
-        if hasattr(cfg.policy.collect, "each_iter_n_sample"):  # TODO(pu)
-            new_data = collector.collect(
-                n_sample=cfg.policy.collect.each_iter_n_sample,
-                train_iter=learner.train_iter,
-                policy_kwargs=collect_kwargs
-            )
-        else:
-            new_data = collector.collect(train_iter=learner.train_iter, policy_kwargs=collect_kwargs)
+        new_data = collector.collect(train_iter=learner.train_iter, policy_kwargs=collect_kwargs)
         replay_buffer.push(new_data, cur_collector_envstep=collector.envstep)
         # Learn policy from collected data
         for i in range(cfg.policy.learn.update_per_collect):
@@ -113,7 +107,23 @@ def serial_pipeline(
             learner.train(train_data, collector.envstep)
             if learner.policy.get_attribute('priority'):
                 replay_buffer.update(learner.priority_info)
+        if collector.envstep >= max_env_step or learner.train_iter >= max_train_iter:
+            break
 
     # Learner's after_run hook.
     learner.call_hook('after_run')
+    import time
+    import pickle
+    import numpy as np
+    with open(os.path.join(cfg.exp_name, 'result.pkl'), 'wb') as f:
+        eval_value_raw = [d['final_eval_reward'] for d in eval_info]
+        final_data = {
+            'stop': stop,
+            'env_step': collector.envstep,
+            'train_iter': learner.train_iter,
+            'eval_value': np.mean(eval_value_raw),
+            'eval_value_raw': eval_value_raw,
+            'finish_time': time.ctime(),
+        }
+        pickle.dump(final_data, f)
     return policy

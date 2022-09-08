@@ -2,17 +2,19 @@ from ding.utils import POLICY_REGISTRY
 from ding.rl_utils import get_epsilon_greedy_fn
 from .base_policy import CommandModePolicy
 
-from .dqn import DQNPolicy
+from .dqn import DQNPolicy, DQNSTDIMPolicy
 from .c51 import C51Policy
 from .qrdqn import QRDQNPolicy
 from .iqn import IQNPolicy
+from .fqf import FQFPolicy
 from .rainbow import RainbowDQNPolicy
 from .r2d2 import R2D2Policy
+from .r2d2_gtrxl import R2D2GTrXLPolicy
 from .r2d2_collect_traj import R2D2CollectTrajPolicy
 from .sqn import SQNPolicy
-from .ppo import PPOPolicy, PPOOffPolicy
-from .ppo_offpolicy_collect_traj import PPOOffCollectTrajPolicy
-from .ppg import PPGPolicy
+from .ppo import PPOPolicy, PPOOffPolicy, PPOPGPolicy
+from .offppo_collect_traj import OffPPOCollectTrajPolicy
+from .ppg import PPGPolicy, PPGOffPolicy
 from .a2c import A2CPolicy
 from .impala import IMPALAPolicy
 from .ngu import NGUPolicy
@@ -21,6 +23,7 @@ from .td3 import TD3Policy
 from .td3_vae import TD3VAEPolicy
 from .td3_bc import TD3BCPolicy
 from .sac import SACPolicy, SACDiscretePolicy
+from .mbpolicy.mbsac import MBSACPolicy, STEVESACPolicy
 from .qmix import QMIXPolicy
 from .wqmix import WQMIXPolicy
 from .collaq import CollaQPolicy
@@ -35,7 +38,12 @@ from .r2d3 import R2D3Policy
 
 from .d4pg import D4PGPolicy
 from .cql import CQLPolicy, CQLDiscretePolicy
+from .decision_transformer import DTPolicy
 from .pdqn import PDQNPolicy
+from .sac import SQILSACPolicy
+
+from .efficientzero import EfficientZeroPolicy
+from .efficientzero_expert_data import EfficientZeroExertDataPolicy
 
 
 class EpsCommandModePolicy(CommandModePolicy):
@@ -91,6 +99,11 @@ class DQNCommandModePolicy(DQNPolicy, EpsCommandModePolicy):
     pass
 
 
+@POLICY_REGISTRY.register('dqn_stdim_command')
+class DQNSTDIMCommandModePolicy(DQNSTDIMPolicy, EpsCommandModePolicy):
+    pass
+
+
 @POLICY_REGISTRY.register('dqfd_command')
 class DQFDCommandModePolicy(DQFDPolicy, EpsCommandModePolicy):
     pass
@@ -111,6 +124,11 @@ class IQNCommandModePolicy(IQNPolicy, EpsCommandModePolicy):
     pass
 
 
+@POLICY_REGISTRY.register('fqf_command')
+class FQFCommandModePolicy(FQFPolicy, EpsCommandModePolicy):
+    pass
+
+
 @POLICY_REGISTRY.register('rainbow_command')
 class RainbowDQNCommandModePolicy(RainbowDQNPolicy, EpsCommandModePolicy):
     pass
@@ -118,6 +136,11 @@ class RainbowDQNCommandModePolicy(RainbowDQNPolicy, EpsCommandModePolicy):
 
 @POLICY_REGISTRY.register('r2d2_command')
 class R2D2CommandModePolicy(R2D2Policy, EpsCommandModePolicy):
+    pass
+
+
+@POLICY_REGISTRY.register('r2d2_gtrxl_command')
+class R2D2GTrXLCommandModePolicy(R2D2GTrXLPolicy, EpsCommandModePolicy):
     pass
 
 
@@ -146,13 +169,18 @@ class PPOCommandModePolicy(PPOPolicy, DummyCommandModePolicy):
     pass
 
 
+@POLICY_REGISTRY.register('ppo_pg_command')
+class PPOPGCommandModePolicy(PPOPGPolicy, DummyCommandModePolicy):
+    pass
+
+
 @POLICY_REGISTRY.register('ppo_offpolicy_command')
 class PPOOffCommandModePolicy(PPOOffPolicy, DummyCommandModePolicy):
     pass
 
 
-@POLICY_REGISTRY.register('ppo_offpolicy_collect_traj_command')
-class PPOOffCollectTrajCommandModePolicy(PPOOffCollectTrajPolicy, DummyCommandModePolicy):
+@POLICY_REGISTRY.register('offppo_collect_traj_command')
+class PPOOffCollectTrajCommandModePolicy(OffPPOCollectTrajPolicy, DummyCommandModePolicy):
     pass
 
 
@@ -163,6 +191,11 @@ class A2CCommandModePolicy(A2CPolicy, DummyCommandModePolicy):
 
 @POLICY_REGISTRY.register('impala_command')
 class IMPALACommandModePolicy(IMPALAPolicy, DummyCommandModePolicy):
+    pass
+
+
+@POLICY_REGISTRY.register('ppg_offpolicy_command')
+class PPGOffCommandModePolicy(PPGOffPolicy, DummyCommandModePolicy):
     pass
 
 
@@ -230,6 +263,16 @@ class SACCommandModePolicy(SACPolicy, DummyCommandModePolicy):
     pass
 
 
+@POLICY_REGISTRY.register('mbsac_command')
+class MBSACCommandModePolicy(MBSACPolicy, DummyCommandModePolicy):
+    pass
+
+
+@POLICY_REGISTRY.register('stevesac_command')
+class STEVESACCommandModePolicy(STEVESACPolicy, DummyCommandModePolicy):
+    pass
+
+
 @POLICY_REGISTRY.register('cql_command')
 class CQLCommandModePolicy(CQLPolicy, DummyCommandModePolicy):
     pass
@@ -237,6 +280,11 @@ class CQLCommandModePolicy(CQLPolicy, DummyCommandModePolicy):
 
 @POLICY_REGISTRY.register('cql_discrete_command')
 class CQLDiscreteCommandModePolicy(CQLDiscretePolicy, EpsCommandModePolicy):
+    pass
+
+
+@POLICY_REGISTRY.register('dt_command')
+class DTCommandModePolicy(DTPolicy, DummyCommandModePolicy):
     pass
 
 
@@ -292,4 +340,19 @@ class PDQNCommandModePolicy(PDQNPolicy, EpsCommandModePolicy):
 
 @POLICY_REGISTRY.register('sac_discrete_command')
 class SACDiscreteCommandModePolicy(SACDiscretePolicy, EpsCommandModePolicy):
+    pass
+
+
+@POLICY_REGISTRY.register('sqil_sac_command')
+class SQILSACCommandModePolicy(SQILSACPolicy, DummyCommandModePolicy):
+    pass
+
+
+@POLICY_REGISTRY.register('efficientzero_command')
+class EfficientZeroCommandModePolicy(EfficientZeroPolicy, DummyCommandModePolicy):
+    pass
+
+
+@POLICY_REGISTRY.register('efficientzero_expert_data_command')
+class EfficientZeroExpertDataCommandModePolicy(EfficientZeroExertDataPolicy, DummyCommandModePolicy):
     pass

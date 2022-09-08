@@ -1,6 +1,7 @@
 from typing import Optional, Tuple
 import os
-import logging
+import torch
+from ditk import logging
 from functools import partial
 from tensorboardX import SummaryWriter
 import numpy as np
@@ -8,7 +9,7 @@ import numpy as np
 from ding.envs import get_vec_env_setting, create_env_manager
 from ding.worker import BaseLearner, InteractionSerialEvaluator, BaseSerialCommander, create_buffer, \
     create_serial_collector
-from ding.config import compile_config, read_config
+from ding.config import read_config, compile_config
 from ding.policy import create_policy
 from ding.reward_model import create_reward_model
 from ding.utils import set_pkg_seed
@@ -34,12 +35,14 @@ def serial_pipeline_gail(
         input_cfg: Tuple[dict, dict],
         expert_cfg: Tuple[dict, dict],
         seed: int = 0,
-        max_iterations: Optional[int] = int(1e9),
+        model: Optional[torch.nn.Module] = None,
+        max_train_iter: Optional[int] = int(1e10),
+        max_env_step: Optional[int] = int(1e10),
         collect_data: bool = True,
 ) -> 'Policy':  # noqa
     """
     Overview:
-        Serial pipeline entry with reward model.
+        Serial pipeline entry for GAIL reward model.
     Arguments:
         - input_cfg (:obj:`Union[str, Tuple[dict, dict]]`): Config in dict type. \
             ``str`` type means config file path. \
@@ -48,8 +51,9 @@ def serial_pipeline_gail(
             ``str`` type means config file path. \
             ``Tuple[dict, dict]`` type means [user_config, create_cfg].
         - seed (:obj:`int`): Random seed.
-        - max_iterations (:obj:`Optional[torch.nn.Module]`): Learner's max iteration. Pipeline will stop \
-            when reaching this iteration.
+        - model (:obj:`Optional[torch.nn.Module]`): Instance of torch.nn.Module.
+        - max_train_iter (:obj:`Optional[int]`): Maximum policy update iterations in training.
+        - max_env_step (:obj:`Optional[int]`): Maximum collected environment interaction steps.
         - collect_data (:obj:`bool`): Collect expert data.
     Returns:
         - policy (:obj:`Policy`): Converged policy.
@@ -64,17 +68,19 @@ def serial_pipeline_gail(
         expert_cfg, expert_create_cfg = expert_cfg
     create_cfg.policy.type = create_cfg.policy.type + '_command'
     cfg = compile_config(cfg, seed=seed, auto=True, create_cfg=create_cfg, save_cfg=True)
+    if 'data_path' not in cfg.reward_model:
+        cfg.reward_model.data_path = cfg.exp_name
     # Load expert data
     if collect_data:
         if expert_cfg.policy.get('other', None) is not None and expert_cfg.policy.other.get('eps', None) is not None:
             expert_cfg.policy.other.eps.collect = -1
         if expert_cfg.policy.get('load_path', None) is None:
-            expert_cfg.policy.load_path = cfg.reward_model.expert_load_path
+            expert_cfg.policy.load_path = cfg.reward_model.expert_model_path
         collect_demo_data(
             (expert_cfg, expert_create_cfg),
             seed,
             state_dict_path=expert_cfg.policy.load_path,
-            expert_data_path=cfg.reward_model.expert_data_path,
+            expert_data_path=cfg.reward_model.data_path + '/expert_data.pkl',
             collect_count=cfg.reward_model.collect_count
         )
     # Create main components: env, policy
@@ -84,7 +90,7 @@ def serial_pipeline_gail(
     collector_env.seed(cfg.seed)
     evaluator_env.seed(cfg.seed, dynamic_seed=False)
     set_pkg_seed(cfg.seed, use_cuda=cfg.policy.cuda)
-    policy = create_policy(cfg.policy, enable_field=['learn', 'collect', 'eval', 'command'])
+    policy = create_policy(cfg.policy, model=model, enable_field=['learn', 'collect', 'eval', 'command'])
 
     # Create worker components: learner, collector, evaluator, replay buffer, commander.
     tb_logger = SummaryWriter(os.path.join('./{}/log/'.format(cfg.exp_name), 'serial'))
@@ -115,13 +121,15 @@ def serial_pipeline_gail(
     if cfg.policy.get('random_collect_size', 0) > 0:
         random_collect(cfg.policy, policy, collector, collector_env, commander, replay_buffer)
     best_reward = -np.inf
-    for _ in range(max_iterations):
-        # Evaluate policy performance
+    while True:
         collect_kwargs = commander.step()
+        # Evaluate policy performance
         if evaluator.should_eval(learner.train_iter):
             stop, reward = evaluator.eval(learner.save_checkpoint, learner.train_iter, collector.envstep)
-            if reward >= best_reward:
-                save_reward_model(cfg.exp_name, reward_model)
+            reward_mean = np.array([r['final_eval_reward'] for r in reward]).mean()
+            if reward_mean >= best_reward:
+                save_reward_model(cfg.exp_name, reward_model, 'best')
+                best_reward = reward_mean
             if stop:
                 break
         new_data_count, target_new_data_count = 0, cfg.reward_model.get('target_new_data_count', 1)
@@ -145,17 +153,17 @@ def serial_pipeline_gail(
                     "You can modify data collect config, e.g. increasing n_sample, n_episode."
                 )
                 break
-            # update train_data reward
-            reward_model.estimate(train_data)
-            learner.train(train_data, collector.envstep)
+            # update train_data reward using the augmented reward
+            train_data_augmented = reward_model.estimate(train_data)
+            learner.train(train_data_augmented, collector.envstep)
             if learner.policy.get_attribute('priority'):
                 replay_buffer.update(learner.priority_info)
-        if cfg.policy.on_policy:
-            # On-policy algorithm must clear the replay buffer.
-            replay_buffer.clear()
+        if collector.envstep >= max_env_step or learner.train_iter >= max_train_iter:
+            break
 
     # Learner's after_run hook.
     learner.call_hook('after_run')
     save_reward_model(cfg.exp_name, reward_model, 'last')
     # evaluate
-    evaluator.eval(learner.save_checkpoint, learner.train_iter, collector.envstep)
+    # evaluator.eval(learner.save_checkpoint, learner.train_iter, collector.envstep)
+    return policy

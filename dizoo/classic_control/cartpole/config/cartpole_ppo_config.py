@@ -1,7 +1,7 @@
 from easydict import EasyDict
 
 cartpole_ppo_config = dict(
-    exp_name='cartpole_ppo',
+    exp_name='cartpole_onppo_seed0',
     env=dict(
         collector_env_num=8,
         evaluator_env_num=5,
@@ -26,9 +26,7 @@ cartpole_ppo_config = dict(
             value_weight=0.5,
             entropy_weight=0.01,
             clip_ratio=0.2,
-            learner=dict(
-                hook=dict(save_ckpt_after_iter=100)
-            ),
+            learner=dict(hook=dict(save_ckpt_after_iter=100)),
         ),
         collect=dict(
             n_sample=256,
@@ -36,11 +34,7 @@ cartpole_ppo_config = dict(
             discount_factor=0.9,
             gae_lambda=0.95,
         ),
-        eval=dict(
-            evaluator=dict(
-                eval_freq=100,
-            ),
-        ),
+        eval=dict(evaluator=dict(eval_freq=100, ), ),
     ),
 )
 cartpole_ppo_config = EasyDict(cartpole_ppo_config)
@@ -55,3 +49,8 @@ cartpole_ppo_create_config = dict(
 )
 cartpole_ppo_create_config = EasyDict(cartpole_ppo_create_config)
 create_config = cartpole_ppo_create_config
+
+if __name__ == "__main__":
+    # or you can enter `ding -m serial_onpolicy -c cartpole_ppo_config.py -s 0`
+    from ding.entry import serial_pipeline_onpolicy
+    serial_pipeline_onpolicy((main_config, create_config), seed=0)

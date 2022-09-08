@@ -1,9 +1,9 @@
 from easydict import EasyDict
-from ding.entry import serial_pipeline_onpolicy
 
 bipedalwalker_ppo_config = dict(
-    exp_name='bipedalwalker_ppo',
+    exp_name='bipedalwalker_ppo_seed0',
     env=dict(
+        env_id='BipedalWalker-v3',
         collector_env_num=8,
         evaluator_env_num=5,
         # (bool) Scale output action into legal range.
@@ -11,6 +11,7 @@ bipedalwalker_ppo_config = dict(
         n_evaluator_episode=5,
         stop_value=300,
         rew_clip=True,
+        # The path to save the game replay
         replay_path=None,
     ),
     policy=dict(
@@ -45,12 +46,13 @@ bipedalwalker_ppo_create_config = dict(
         type='bipedalwalker',
         import_names=['dizoo.box2d.bipedalwalker.envs.bipedalwalker_env'],
     ),
-
-    env_manager=dict(type='base'),
+    env_manager=dict(type='subprocess'),
     policy=dict(type='ppo'),
 )
 bipedalwalker_ppo_create_config = EasyDict(bipedalwalker_ppo_create_config)
 create_config = bipedalwalker_ppo_create_config
 
 if __name__ == "__main__":
+    # or you can enter `ding -m serial_onpolicy -c bipedalwalker_ppo_config.py -s 0`
+    from ding.entry import serial_pipeline_onpolicy
     serial_pipeline_onpolicy([main_config, create_config], seed=0)

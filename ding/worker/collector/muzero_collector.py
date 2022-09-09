@@ -406,7 +406,7 @@ class MuZeroCollector(ISerialCollector):
                 distributions_dict = {k: v['distributions'] for k, v in policy_output.items()}
                 value_dict = {k: v['value'] for k, v in policy_output.items()}
                 pred_value_dict = {k: v['pred_value'] for k, v in policy_output.items()}
-                visit_entropy_dict = {k: v['visit_entropy'] for k, v in policy_output.items()}
+                visit_entropy_dict = {k: v['visit_count_distribution_entropy'] for k, v in policy_output.items()}
 
                 # Interact with env.
                 timesteps = self._env.step(actions)
@@ -433,7 +433,7 @@ class MuZeroCollector(ISerialCollector):
                 else:
                     game_histories[i].append(actions[i], to_ndarray(obs['observation']), clip_reward)
 
-                # NOTE: the position of code snippt is very important.
+                # NOTE: the position of code snippet is very important.
                 # the obs['action_mask'] and obs['to_play'] is corresponding to next action
                 if two_player_game:
                     action_mask[i] = to_ndarray(obs['action_mask'])
@@ -493,6 +493,7 @@ class MuZeroCollector(ISerialCollector):
                         'reward': reward,
                         'time': self._env_info[env_id]['time'],
                         'step': self._env_info[env_id]['step'],
+                        'visit_entropy': visit_entropies_lst[i] / eps_steps_lst[i],
                     }
                     collected_episode += 1
                     self._episode_info.append(info)
@@ -567,10 +568,10 @@ class MuZeroCollector(ISerialCollector):
                         } for i in range(self.len_pool())
                     ]
                 )
-                np.save('/Users/puyuan/code/DI-engine/dizoo/board_games/atari/config/one_episode_replay_buffer_img',
-                        self.replay_buffer.buffer)
-                one_episode_replay_buffer_img = np.load('/Users/puyuan/code/DI-engine/dizoo/board_games/atari/config/one_episode_replay_buffer_img.npy',
-                        allow_pickle=True)
+                # np.save('/Users/puyuan/code/DI-engine/dizoo/board_games/atari/config/one_episode_replay_buffer_img',
+                #         self.replay_buffer.buffer)
+                # one_episode_replay_buffer_img = np.load('/Users/puyuan/code/DI-engine/dizoo/board_games/atari/config/one_episode_replay_buffer_img.npy',
+                #         allow_pickle=True)
 
                 # np.save('/Users/puyuan/code/DI-engine/dizoo/board_games/tictactoe/config/one_episode_replay_buffer_tictactoe_2-player-mode',
                 #         self.replay_buffer.buffer)
@@ -596,6 +597,7 @@ class MuZeroCollector(ISerialCollector):
             envstep_count = sum([d['step'] for d in self._episode_info])
             duration = sum([d['time'] for d in self._episode_info])
             episode_reward = [d['reward'] for d in self._episode_info]
+            visit_entropy = [d['visit_entropy'] for d in self._episode_info]
             self._total_duration += duration
             info = {
                 'episode_count': episode_count,
@@ -611,6 +613,7 @@ class MuZeroCollector(ISerialCollector):
                 'total_envstep_count': self._total_envstep_count,
                 'total_episode_count': self._total_episode_count,
                 'total_duration': self._total_duration,
+                'visit_entropy': np.mean(visit_entropy),
                 # 'each_reward': episode_reward,
             }
             self._episode_info.clear()

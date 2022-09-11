@@ -12,9 +12,9 @@ import torch.nn.functional as F
 from ding.rl_utils import get_nstep_return_data, get_train_sample
 from ding.rl_utils.image_transform_muzero import Transforms
 
-# cpp mcts
-from ding.rl_utils.mcts.ctree import cytree
-from ding.rl_utils.mcts.mcts_ctree import MCTSCtree
+# # cpp mcts
+# from ding.rl_utils.mcts.ctree import cytree
+# from ding.rl_utils.mcts.mcts_ctree import MCTSCtree
 # python mcts
 import ding.rl_utils.mcts.ptree as tree
 from ding.rl_utils.mcts.mcts_ptree import EfficientZeroMCTSPtree as MCTSPtree
@@ -22,10 +22,10 @@ from ding.rl_utils.mcts.utils import select_action
 from ding.torch_utils import to_tensor, to_device
 from ding.model.template.efficientzero.efficientzero_base_model import inverse_scalar_transform
 # TODO(pu): choose game config
-from dizoo.board_games.atari.config.atari_config import game_config
+#from dizoo.board_games.atari.config.atari_config import game_config
 #from dizoo.board_games.tictactoe.config.tictactoe_config import game_config
 # from dizoo.board_games.gomoku.config.gomoku_efficientzero_config import game_config
-
+from dizoo.board_games.atari.config.metadrive_config import game_config
 
 @POLICY_REGISTRY.register('efficientzero')
 class EfficientZeroPolicy(Policy):

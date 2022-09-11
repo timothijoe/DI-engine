@@ -11,14 +11,14 @@ game_config = EasyDict(dict(
     # mcts_ctree=True,
     mcts_ctree=False,
     image_based=True,
-    cvt_string=True,
+    cvt_string=False,
     # cvt_string=False, # for check data
     clip_reward=True,
     game_wrapper=True,
-    action_space_size=6,
+    action_space_size=5,
     amp_type='none',
-    obs_shape=(12, 96, 96),
-    image_channel=3,
+    obs_shape=(5, 200, 200),
+    image_channel=5,
     gray_scale=False,
     downsample=True,
     vis_result=True,
@@ -37,7 +37,7 @@ game_config = EasyDict(dict(
     batch_size=4,
     game_history_max_length=20,
     total_transitions=int(1e5),
-    num_unroll_steps=5,
+    num_unroll_steps=1, #5
     td_steps=5,
 
     # collector_env_num=1,
@@ -114,7 +114,7 @@ game_config = EasyDict(dict(
     transition_num=1,
     # frame skip & stack observation
     frame_skip=4,
-    stacked_observations=4,
+    stacked_observations=1,
     # coefficient
     reward_loss_coeff=1,
     value_loss_coeff=0.25,

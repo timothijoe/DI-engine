@@ -15,6 +15,7 @@ from ding.rl_utils.mcts.utils import prepare_observation_lst, concat_output, con
 # from ding.rl_utils.mcts.ctree import cytree
 # from ding.rl_utils.mcts.mcts_ctree import MCTSCtree
 # python mcts
+from ding.rl_utils.mcts.utils import prepare_metadrive_obs_lst
 import ding.rl_utils.mcts.ptree as tree
 from ding.rl_utils.mcts.mcts_ptree import EfficientZeroMCTSPtree as MCTS_ptree
 from ding.model.template.efficientzero.efficientzero_base_model import inverse_scalar_transform
@@ -28,8 +29,8 @@ class BufferedData:
     meta: dict
 
 
-@BUFFER_REGISTRY.register('game')
-class GameBuffer(Buffer):
+@BUFFER_REGISTRY.register('metadrive-game')
+class MetadriveBuffer(Buffer):
 
     def __init__(self, config=None):
         """Reference : DISTRIBUTED PRIORITIZED EXPERIENCE REPLAY
@@ -592,7 +593,8 @@ class GameBuffer(Buffer):
 
         re_num = int(batch_size * ratio)
         # formalize the input observations
-        obs_lst = prepare_observation_lst(obs_lst)
+        #obs_lst = prepare_observation_lst(obs_lst)
+        obs_lst = prepare_metadrive_obs_lst(obs_lst)
 
         # formalize the inputs of a batch
         inputs_batch = [obs_lst, action_lst, mask_lst, indices_lst, weights_lst, make_time_lst]
@@ -671,7 +673,7 @@ class GameBuffer(Buffer):
 
         batch_values, batch_value_prefixs = [], []
         with torch.no_grad():
-            value_obs_lst = prepare_observation_lst(value_obs_lst)
+            value_obs_lst = prepare_metadrive_obs_lst(value_obs_lst)
             # split a full batch into slices of mini_infer_size: to save the GPU memory for more GPU actors
             m_batch = self.config.mini_infer_size
             slices = np.ceil(batch_size / m_batch).astype(np.int_)
@@ -870,7 +872,7 @@ class GameBuffer(Buffer):
             legal_actions = [[i for i, x in enumerate(action_mask[j]) if x == 1] for j in range(max(self.config.num_unroll_steps + 1, batch_size))]
 
         with torch.no_grad():
-            policy_obs_lst = prepare_observation_lst(policy_obs_lst)
+            policy_obs_lst = prepare_metadrive_obs_lst(policy_obs_lst)
             # split a full batch into slices of mini_infer_size: to save the GPU memory for more GPU actors
             m_batch = self.config.mini_infer_size
             slices = np.ceil(batch_size / m_batch).astype(np.int_)

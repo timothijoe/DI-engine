@@ -13,9 +13,9 @@ from ding.rl_utils import get_nstep_return_data, get_train_sample
 from ding.rl_utils.image_transform_muzero import Transforms
 from ding.torch_utils.data_helper import to_ndarray
 
-# cpp mcts
-from ding.rl_utils.mcts.ctree import cytree
-from ding.rl_utils.mcts.mcts_ctree import MCTSCtree
+# # cpp mcts
+# from ding.rl_utils.mcts.ctree import cytree
+# from ding.rl_utils.mcts.mcts_ctree import MCTSCtree
 # python mcts
 import ding.rl_utils.mcts.ptree as tree
 from ding.rl_utils.mcts.mcts_ptree import EfficientZeroMCTSPtree as MCTS_ptree

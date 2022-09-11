@@ -154,6 +154,21 @@ def prepare_observation_lst(observation_lst):
     return observation_lst
 
 
+def prepare_metadrive_obs_lst(observation_lst):
+    """Prepare the observations to satisfy the input fomat of torch
+    [B, S, W, H, C] -> [B, S x C, W, H]
+    batch, stack num, width, height, channel
+    """
+    # B, S, W, H, C
+    observation_lst = np.array(observation_lst, dtype=np.float32)
+    observation_lst = np.moveaxis(observation_lst, -1, 2)
+
+    shape = observation_lst.shape
+    observation_lst = observation_lst.reshape((shape[0], -1, shape[-2], shape[-1]))
+
+    return observation_lst
+
+
 def concat_output_value(output_lst):
     # concat the values of the model output list
     value_lst = []

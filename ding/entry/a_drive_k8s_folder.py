@@ -43,10 +43,10 @@ metadrive_macro_config = dict(
             max_retry=2,
             context='spawn',
         ),
-        n_evaluator_episode=2,
+        n_evaluator_episode=5,
         stop_value=99999,
-        collector_env_num=1,
-        evaluator_env_num=1,
+        collector_env_num=8,
+        evaluator_env_num=2,
         wrapper=dict(),
         max_episode_steps = int(150),
         gray_scale = False,
@@ -195,7 +195,7 @@ def main(cfg):
             stop, reward = evaluator.eval(
             learner.save_checkpoint, learner.train_iter, collector.envstep, config=game_config
         )
-        new_data = collector.collect(n_episode=3, train_iter=learner.train_iter)
+        new_data = collector.collect(n_episode=30, train_iter=learner.train_iter)
         replay_buffer.remove_to_fit()
         for i in range(cfg.policy.learn.update_per_collect):
             try:
@@ -216,9 +216,7 @@ def main(cfg):
         # if collector.envstep >= max_env_step or learner.train_iter >= max_train_iter:
         #     break
         zt += 1
-        if zt >=2:
-            break
-        if zt >= int(1e10):
+        if zt >=int(1e7):
             break
 
     # commander = BaseSerialCommander(

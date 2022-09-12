@@ -13,7 +13,7 @@ game_config = EasyDict(dict(
     image_based=True,
     cvt_string=False,
     # cvt_string=False, # for check data
-    clip_reward=True,
+    clip_reward=False,
     game_wrapper=True,
     action_space_size=5,
     amp_type='none',
@@ -37,7 +37,7 @@ game_config = EasyDict(dict(
     batch_size=4,
     game_history_max_length=20,
     total_transitions=int(1e5),
-    num_unroll_steps=1, #5
+    num_unroll_steps=3, #5
     td_steps=5,
 
     # collector_env_num=1,

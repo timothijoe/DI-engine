@@ -189,15 +189,35 @@ def main(cfg):
     #         for _ in range(game_config.collector_env_num)
     #     ]
     # )
-    
-    if evaluator.should_eval(learner.train_iter):
-        stop, reward = evaluator.eval(
-        learner.save_checkpoint, learner.train_iter, collector.envstep, config=game_config
-    )
-    new_data = collector.collect(n_episode=3, train_iter=learner.train_iter)
-    replay_buffer.remove_to_fit()
-    train_data = replay_buffer.sample_train_data(learner.policy.get_attribute('batch_size'), policy)
-    learner.train(train_data, collector.envstep)
+    zt = 0
+    while True:
+        if evaluator.should_eval(learner.train_iter):
+            stop, reward = evaluator.eval(
+            learner.save_checkpoint, learner.train_iter, collector.envstep, config=game_config
+        )
+        new_data = collector.collect(n_episode=3, train_iter=learner.train_iter)
+        replay_buffer.remove_to_fit()
+        for i in range(cfg.policy.learn.update_per_collect):
+            try:
+                train_data = replay_buffer.sample_train_data(learner.policy.get_attribute('batch_size'), policy)
+            except Exception as exception:
+                print(exception)
+                logging.warning(
+                    f'The data in replay_buffer is not sufficient to sample a minibatch: \
+                    batch_size: {replay_buffer.get_batch_size()} \
+                num_of_episodes: {replay_buffer.get_num_of_episodes()}, num of game historys: {replay_buffer.get_num_of_game_histories()}, number of transitions: {replay_buffer.get_num_of_transitions()}, \
+                    continue to collect now ....'
+                )
+                break
+            learner.train(train_data, collector.envstep)
+            
+        # max_env_step = int(1e10),
+        # max_train_iter = int(1e10)
+        # if collector.envstep >= max_env_step or learner.train_iter >= max_train_iter:
+        #     break
+        zt += 1
+        if zt >=2:
+            break
 
     # commander = BaseSerialCommander(
     #     cfg.policy.other.commander, learner, collector, evaluator, replay_buffer, policy.command_mode

@@ -682,7 +682,7 @@ class MetadriveBuffer(Buffer):
                 beg_index = m_batch * i
                 end_index = m_batch * (i + 1)
                 if self.config.image_based:
-                    m_obs = torch.from_numpy(value_obs_lst[beg_index:end_index]).to(device).float() / 255.0
+                    m_obs = torch.from_numpy(value_obs_lst[beg_index:end_index]).to(device).float()
                 else:
                     m_obs = torch.from_numpy(value_obs_lst[beg_index:end_index]).to(device).float()
                 m_output = self.model.initial_inference(m_obs)

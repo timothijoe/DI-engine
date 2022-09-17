@@ -12,7 +12,7 @@ from ding.policy import EfficientZeroPolicy
 from ding.worker import SampleSerialCollector, InteractionSerialEvaluator, BaseLearner, AdvancedReplayBuffer
 from ding.rl_utils import get_epsilon_greedy_fn
 from core.envs import DriveEnvWrapper, MetaDriveMacroEnv
-
+               
 from typing import Union, Optional, List, Any, Tuple
 import os
 import torch
@@ -35,7 +35,7 @@ from ding.data.buffer.metadrive_buffer import MetadriveBuffer
 from dizoo.board_games.atari.config.metadrive_config import game_config
 
 metadrive_macro_config = dict(
-    exp_name='data_ez_ptree/mcts_tree',
+    exp_name='mcts_data/data_ez_ptree/mcts_tree',
     env=dict(
         metadrive=dict(use_render=False),
         manager=dict(

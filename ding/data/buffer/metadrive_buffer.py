@@ -12,8 +12,8 @@ from ding.data.buffer import Buffer, BufferedData
 from ding.utils import fastcopy
 from ding.rl_utils.mcts.utils import prepare_observation_lst, concat_output, concat_output_value
 # cpp mcts
-# from ding.rl_utils.mcts.ctree import cytree
-# from ding.rl_utils.mcts.mcts_ctree import MCTSCtree
+from ding.rl_utils.mcts.ctree import cytree
+from ding.rl_utils.mcts.mcts_ctree import MCTSCtree
 # python mcts
 from ding.rl_utils.mcts.utils import prepare_metadrive_obs_lst
 import ding.rl_utils.mcts.ptree as tree

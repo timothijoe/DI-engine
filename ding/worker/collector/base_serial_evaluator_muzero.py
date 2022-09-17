@@ -229,7 +229,10 @@ class BaseSerialEvaluatorMuZero(object):
                 stack_obs = [game_history.step_obs() for game_history in game_histories]
                 stack_obs = prepare_observation_lst(stack_obs)
                 if self.game_config.image_based:
-                    stack_obs = torch.from_numpy(stack_obs).to(self.game_config.device).float() / 255.0
+                    if hasattr(self.game_config, 'metadrive_type'):
+                        stack_obs = torch.from_numpy(stack_obs).to(self.game_config.device).float()
+                    else:
+                        stack_obs = torch.from_numpy(stack_obs).to(self.game_config.device).float() / 255.0
                 else:
                     stack_obs = torch.from_numpy(np.array(stack_obs)).to(self.game_config.device)
                 if two_plaer_game:

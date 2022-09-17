@@ -384,56 +384,18 @@ class MetadriveCollector(ISerialCollector):
 
         self_play_visit_entropy = []
         total_transitions = 0
-        
-        
-        ready_judge_dict = {}
-        for i in range(env_nums):
-            ready_judge_dict[i] = True
-            
-            
+
         def _get_max_entropy(action_space):
             p = 1.0 / action_space
             ep = -action_space * p * np.log2(p)
             return ep
-        
-        def reset_done_env(env_id): 
-            init_obses = self._env.ready_obs
-            assert env_id in init_obses.keys()
-            init_obs = init_obses[env_id]['observation']
-            init_obs = to_ndarray(init_obs)
-            game_histories[env_id] = GameHistory(
-                self._env.action_space,
-                max_length=self.game_config.game_history_max_length,
-                config=self.game_config
-            )
-            stack_obs_windows[env_id] = [init_obs for _ in range(self.game_config.stacked_observations)]
-            game_histories[env_id].init(stack_obs_windows[i])
-            ready_judge_dict[env_id] = True
-        
-        def reset_done_pipeline(ready_lst):
-            stack_refresh_lst = []
-            for ready_id in ready_lst:
-                if ready_judge_dict[ready_id] == False:
-                    stack_refresh_lst.append(ready_id)
-            for id in stack_refresh_lst:
-                reset_done_env(id)
 
         max_visit_entropy = _get_max_entropy(self.game_config.action_space_size)
         print('max_visit_entropy', max_visit_entropy)
-        #ready_label_lst = [False for _ in range(range(env_nums))]
-        # ready_dict = {}
-        # for i in range(env_nums):
-        #     ready_dict[i] = True
-            
+
         while True:
             with self._timer:
-                obs = self._env.ready_obs
-                obs_id_lst = list(obs.keys())
-                if len(obs_id_lst) == 0:
-                    continue
-                reset_done_pipeline(obs_id_lst)
-                stack_obs = [game_histories[i].step_obs() for i in obs_id_lst] 
-                #stack_obs = [game_history.step_obs() for game_history in game_histories]
+                stack_obs = [game_history.step_obs() for game_history in game_histories]
                 stack_obs = to_ndarray(stack_obs)
                 stack_obs = prepare_metadrive_obs_lst(stack_obs)
                 if self.game_config.image_based:
@@ -442,7 +404,7 @@ class MetadriveCollector(ISerialCollector):
                     stack_obs = torch.from_numpy(np.array(stack_obs)).to(self.game_config.device)
 
                 if two_plaer_game:
-                    policy_output = self._policy.forward(stack_obs, action_mask, temperature, to_play, obs_id_lst)
+                    policy_output = self._policy.forward(stack_obs, action_mask, temperature, to_play)
                 else:
                     policy_output = self._policy.forward(stack_obs, action_mask, temperature, None)
 
@@ -563,22 +525,21 @@ class MetadriveCollector(ISerialCollector):
                     self.trajectory_pool.append((game_histories[i], priorities, dones[i]))
                     # NOTE: this is very important to save the done data to replay_buffer
                     # self.free(end_tag=True)
-                    ready_judge_dict[i] = False
 
-                    # # reset the finished env and init game_histories
-                    # init_obses = self._env.ready_obs
-                    # init_obs = init_obses[i]['observation']
-                    # init_obs = to_ndarray(init_obs)
-                    # action_mask[i] = to_ndarray(init_obses[i]['action_mask'])
-                    # to_play[i] = to_ndarray(init_obses[i]['to_play'])
+                    # reset the finished env and init game_histories
+                    init_obses = self._env.ready_obs
+                    init_obs = init_obses[i]['observation']
+                    init_obs = to_ndarray(init_obs)
+                    action_mask[i] = to_ndarray(init_obses[i]['action_mask'])
+                    to_play[i] = to_ndarray(init_obses[i]['to_play'])
 
-                    # game_histories[i] = GameHistory(
-                    #     self._env.action_space,
-                    #     max_length=self.game_config.game_history_max_length,
-                    #     config=self.game_config
-                    # )
-                    # stack_obs_windows[i] = [init_obs for _ in range(self.game_config.stacked_observations)]
-                    # game_histories[i].init(stack_obs_windows[i])
+                    game_histories[i] = GameHistory(
+                        self._env.action_space,
+                        max_length=self.game_config.game_history_max_length,
+                        config=self.game_config
+                    )
+                    stack_obs_windows[i] = [init_obs for _ in range(self.game_config.stacked_observations)]
+                    game_histories[i].init(stack_obs_windows[i])
                     last_game_histories[i] = None
                     last_game_priorities[i] = None
 
@@ -624,7 +585,6 @@ class MetadriveCollector(ISerialCollector):
         # log
         self._output_log(train_iter)
         return return_data
-
 
     def _output_log(self, train_iter: int) -> None:
         """

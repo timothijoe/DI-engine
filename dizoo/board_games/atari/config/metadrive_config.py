@@ -29,7 +29,7 @@ game_config = EasyDict(dict(
     augmentation=['shift', 'intensity'],
 
     # debug
-    collector_env_num=1,
+    collector_env_num=2,
     evaluator_env_num=1,
     max_episode_steps=int(1e4),
     test_max_episode_steps=int(1e4),

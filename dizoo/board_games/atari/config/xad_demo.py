@@ -15,7 +15,7 @@ from core.envs import DriveEnvWrapper, MetaDriveMacroEnv
 metadrive_macro_config = dict(
     exp_name='metadrive_macro_dqn',
     env=dict(
-        metadrive=dict(use_render=False),
+        metadrive=dict(use_render=True),
         manager=dict(
             shared_memory=False,
             max_retry=2,
@@ -28,7 +28,7 @@ metadrive_macro_config = dict(
         wrapper=dict(),
     ),
     policy=dict(
-        cuda=True,
+        cuda=False,
         model=dict(
             obs_shape=[5, 200, 200],
             action_shape=5,

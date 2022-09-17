@@ -35,7 +35,7 @@ from ding.data.buffer.metadrive_buffer import MetadriveBuffer
 from dizoo.board_games.atari.config.metadrive_config import game_config
 
 metadrive_macro_config = dict(
-    exp_name='data_ez_ptree/mcts_tree',
+    exp_name='mcts_data/data_ez_ptree/mcts_tree',
     env=dict(
         metadrive=dict(use_render=False),
         manager=dict(
@@ -45,7 +45,7 @@ metadrive_macro_config = dict(
         ),
         n_evaluator_episode=2,
         stop_value=99999,
-        collector_env_num=1,
+        collector_env_num=2,
         evaluator_env_num=1,
         wrapper=dict(),
         max_episode_steps = int(150),
@@ -134,7 +134,7 @@ def main(cfg):
     print(cfg.policy.collect.collector)
 
     collector_env_num, evaluator_env_num = cfg.env.collector_env_num, cfg.env.evaluator_env_num
-    collector_env = BaseEnvManager(
+    collector_env = SyncSubprocessEnvManager(
         env_fn=[partial(wrapped_env, cfg.env.metadrive) for _ in range(collector_env_num)],
         cfg=cfg.env.manager,
     )
@@ -190,11 +190,8 @@ def main(cfg):
     #     ]
     # )
     
-    if evaluator.should_eval(learner.train_iter):
-        stop, reward = evaluator.eval(
-        learner.save_checkpoint, learner.train_iter, collector.envstep, config=game_config
-    )
-    new_data = collector.collect(n_episode=3, train_iter=learner.train_iter)
+
+    new_data = collector.collect(n_episode=5, train_iter=learner.train_iter)
     replay_buffer.remove_to_fit()
     train_data = replay_buffer.sample_train_data(learner.policy.get_attribute('batch_size'), policy)
     learner.train(train_data, collector.envstep)

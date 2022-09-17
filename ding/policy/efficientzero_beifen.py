@@ -514,11 +514,11 @@ class EfficientZeroPolicy(Policy):
             # cpp mcts
             if self.game_config.mcts_ctree:
                 action_num = int(action_mask[0].sum())
-                roots = cytree.Roots(env_num, action_num, self.game_config.num_simulations)
+                roots = cytree.Roots(self.game_config.collector_env_num, action_num, self.game_config.num_simulations)
                 noises = [
                     np.random.dirichlet([self.game_config.root_dirichlet_alpha] * action_num).astype(
                         np.float32).tolist()
-                    for j in range(env_num)
+                    for j in range(self.game_config.collector_env_num)
                 ]
                 roots.prepare(self.game_config.root_exploration_fraction, noises, value_prefix_pool, policy_logits_pool)
                 # do MCTS for a policy (argmax in testing)
@@ -526,13 +526,13 @@ class EfficientZeroPolicy(Policy):
             else:
                 # python mcts
                 legal_actions = [
-                    [i for i, x in enumerate(action_mask[j]) if x == 1] for j in range(env_num)
+                    [i for i, x in enumerate(action_mask[j]) if x == 1] for j in range(self.game_config.collector_env_num)
                 ]
-                roots = tree.Roots(env_num, legal_actions, self.game_config.num_simulations)
+                roots = tree.Roots(self.game_config.collector_env_num, legal_actions, self.game_config.num_simulations)
                 # the only difference between collect and eval is the dirichlet noise
                 noises = [
                     np.random.dirichlet([self.game_config.root_dirichlet_alpha] * int(sum(action_mask[j]))
-                                        ).astype(np.float32).tolist() for j in range(env_num)
+                                        ).astype(np.float32).tolist() for j in range(self.game_config.collector_env_num)
                 ]
                 roots.prepare(
                     self.game_config.root_exploration_fraction, noises, value_prefix_pool, policy_logits_pool, to_play
@@ -542,10 +542,9 @@ class EfficientZeroPolicy(Policy):
 
             roots_distributions = roots.get_distributions()  # {list: 1}->{list:6}
             roots_values = roots.get_values()  # {list: 1}
-            # data_id = [i for i in range(self.game_config.collector_env_num)]
-            data_id = obs_id_lst
+            data_id = [i for i in range(self.game_config.collector_env_num)]
             output = {i: None for i in data_id}
-            for i in range(env_num):
+            for i in range(self.game_config.collector_env_num):
                 distributions, value = roots_distributions[i], roots_values[i]
                 # select the argmax, not sampling
                 # TODO(pu):
@@ -554,9 +553,7 @@ class EfficientZeroPolicy(Policy):
                 # action, _ = select_action(distributions, temperature=1, deterministic=True)
                 # TODO(pu): transform to the real action index in legal action set
                 action = np.where(action_mask[i] == 1.0)[0][action]
-                #output[i] = {
-                real_id = obs_id_lst[i]
-                output[real_id] = {
+                output[i] = {
                     'action': action,
                     'distributions': distributions,
                     'visit_entropy': visit_entropy,

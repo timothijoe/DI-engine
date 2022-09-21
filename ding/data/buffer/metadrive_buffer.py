@@ -114,6 +114,7 @@ class MetadriveBuffer(Buffer):
             valid_len = len(data)
         else:
             valid_len = len(data) - meta['gap_steps']
+        valid_len = valid_len if valid_len > 0 else 0 
 
         if meta['priorities'] is None:
             max_prio = self.priorities.max() if self.buffer else 1
@@ -983,7 +984,10 @@ class MetadriveBuffer(Buffer):
                                 """
                                 if to_play_history[0][0] is None:
                                     # for one_player atari games
-                                    target_policies.append(distributions)
+                                    sum_visits = sum(distributions)
+                                    policy = [visit_count / sum_visits for visit_count in distributions]
+                                    target_policies.append(policy)
+                                    #target_policies.append(distributions)
                                 else:
                                     # for two_player board games
                                     policy_tmp = [0 for _ in range(self.config.action_space_size)]
@@ -1063,6 +1067,9 @@ class MetadriveBuffer(Buffer):
                             if self.config.model_type == 'atari':
                                 # for one_player atari games
                                 target_policies.append(distributions)
+                                # sum_visits = sum(distributions)
+                                # policy = [visit_count / sum_visits for visit_count in distributions]
+                                # target_policies.append(policy)
                             else:
                                 # for two_player board games
                                 policy_tmp = [0 for _ in range(self.config.action_space_size)]

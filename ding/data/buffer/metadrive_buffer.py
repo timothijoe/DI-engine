@@ -976,8 +976,13 @@ class MetadriveBuffer(Buffer):
                                 # for one_player atari games
                                 # sum_visits = sum(distributions)
                                 # policy = [visit_count / sum_visits for visit_count in distributions]
-                                # target_policies.append(policy)
-                                target_policies.append(distributions)
+                                # target_policies.append(policy)                                
+                                
+                                sum_visits = sum(distributions)
+                                policy = [visit_count / sum_visits for visit_count in distributions]
+                                target_policies.append(policy)                                
+                                
+                                #target_policies.append(distributions)
                             else:
                                 """
                                 python mcts

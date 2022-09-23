@@ -35,7 +35,7 @@ from ding.data.buffer.metadrive_buffer import MetadriveBuffer
 from dizoo.board_games.atari.config.metadrive_config import game_config
 
 metadrive_macro_config = dict(
-    exp_name='mcts_data/data_ez_ptree/mcts_tree',
+    exp_name='mcts_data/data_ez_ptree/mcts_tree_v3',
     env=dict(
         metadrive=dict(use_render=False),
         manager=dict(
@@ -45,7 +45,7 @@ metadrive_macro_config = dict(
         ),
         n_evaluator_episode=5,
         stop_value=99999,
-        collector_env_num=1,
+        collector_env_num=4,
         evaluator_env_num=1,
         wrapper=dict(),
         max_episode_steps = int(150),
@@ -83,7 +83,7 @@ metadrive_macro_config = dict(
         ),
         learn=dict(
             # debug
-            update_per_collect=40,
+            update_per_collect=100,
             batch_size=64,
             momentum = 0.9,
             weight_decay = 0.0001,
@@ -91,7 +91,7 @@ metadrive_macro_config = dict(
             # update_per_collect=200,  # TODO(pu): 1000
             # batch_size=256,
 
-            learning_rate=0.2,
+            learning_rate=0.04,
             # Frequency of target network update.
             target_update_freq=400,
         ),
@@ -196,8 +196,8 @@ def main(cfg):
             stop, reward = evaluator.eval(
             learner.save_checkpoint, learner.train_iter, collector.envstep, config=game_config
         )
-        #new_data = collector.collect(n_episode=cfg.policy.collect.n_sample, train_iter=learner.train_iter)
-        new_data = collector.collect(n_episode=10, train_iter=learner.train_iter)
+        new_data = collector.collect(n_episode=cfg.policy.collect.n_sample, train_iter=learner.train_iter)
+        #new_data = collector.collect(n_episode=10, train_iter=learner.train_iter)
         replay_buffer.remove_to_fit()
         for i in range(cfg.policy.learn.update_per_collect):
             # try:

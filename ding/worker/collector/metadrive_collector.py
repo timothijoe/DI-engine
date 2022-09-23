@@ -326,44 +326,77 @@ class MetadriveCollector(ISerialCollector):
         assert n_episode >= self._env_num, "Please make sure n_episode >= env_num{}/{}".format(n_episode, self._env_num)
         if policy_kwargs is None:
             policy_kwargs = {}
-            policy_kwargs['temperature'] = np.array([1.0])
+            policy_kwargs['temperature'] = [1.0 for _ in range(self._env_num)]
         temperature = policy_kwargs['temperature']
         collected_episode = 0
         return_data = []
         env_nums = self._env_num
+        game_histories = [None for _ in range(env_nums)]
+        stack_obs_windows = [[] for _ in range(env_nums)]
+        
+        ready_judge_dict = {}
+        for i in range(env_nums):
+            ready_judge_dict[i] = False
+            
+        def reset_done_env(env_id):
+            init_obses = self._env.ready_obs 
+            assert env_id in init_obses.keys()
+            init_obs = init_obses[env_id]['observation']
+            init_obs = to_ndarray(init_obs)
+            game_histories[env_id] = GameHistory(
+                self._env.action_space,
+                max_length = self.game_config.game_history_max_length,
+                config = self.game_config, 
+            )
+            stack_obs_windows[env_id] = [init_obs for _ in range(self.game_config.stacked_observations)]
+            game_histories[env_id].init(stack_obs_windows[env_id])
+            ready_judge_dict[env_id] = True 
+        
+        def reset_done_pipeline(ready_lst):
+            stack_refresh_lst = []
+            for ready_id in ready_lst:
+                if ready_judge_dict[ready_id] == False:
+                    stack_refresh_lst.append(ready_id)
+            for id in stack_refresh_lst:
+                reset_done_env(id)
+            
         # initializations
         init_obses = self._env.ready_obs
-        action_mask = [to_ndarray(init_obses[i]['action_mask']) for i in range(env_nums)]
-        if 'to_play' in init_obses[0]:
-            two_plaer_game = True
-        else:
-            two_plaer_game = False
+        single_action_mask = np.array([1.0, 1.0, 1.0, 1.0, 1.0])
+        action_mask = [to_ndarray(single_action_mask) for i in range(env_nums)]
+        #action_mask = [to_ndarray(init_obses[i]['action_mask']) for i in range(env_nums)]
+        # if 'to_play' in init_obses[0]:
+        #     two_plaer_game = True
+        # else:
+        #     two_plaer_game = False
+        two_plaer_game = True 
 
         if two_plaer_game:
-            to_play = [to_ndarray(init_obses[i]['to_play']) for i in range(env_nums)]
+            #to_play = [to_ndarray(init_obses[i]['to_play']) for i in range(env_nums)]
+            to_play = [to_ndarray(None) for i in range(env_nums)]
 
         dones = np.array([False for _ in range(env_nums)])
-        game_histories = [
-            GameHistory(
-                self._env.action_space, max_length=self.game_config.game_history_max_length, config=self.game_config
-            ) for _ in range(env_nums)
-        ]
-        for i in range(env_nums):
-            game_histories[i].init(
-                [to_ndarray(init_obses[i]['observation']) for _ in range(self.game_config.stacked_observations)]
-            )
+        # game_histories = [
+        #     GameHistory(
+        #         self._env.action_space, max_length=self.game_config.game_history_max_length, config=self.game_config
+        #     ) for _ in range(env_nums)
+        # ]
+        # for i in range(env_nums):
+        #     game_histories[i].init(
+        #         [to_ndarray(init_obses[i]['observation']) for _ in range(self.game_config.stacked_observations)]
+        #     )
 
         last_game_histories = [None for _ in range(env_nums)]
         last_game_priorities = [None for _ in range(env_nums)]
 
         # stack observation windows in boundary: s398, s399, s400, current s1 -> for not init trajectory
-        stack_obs_windows = [[] for _ in range(env_nums)]
-        for i in range(env_nums):
-            stack_obs_windows[i] = [
-                to_ndarray(init_obses[i]['observation']) for _ in range(self.game_config.stacked_observations)
-            ]
-            game_histories[i].init(stack_obs_windows[i])
-
+        # stack_obs_windows = [[] for _ in range(env_nums)]
+        # for i in range(env_nums):
+        #     stack_obs_windows[i] = [
+        #         to_ndarray(init_obses[i]['observation']) for _ in range(self.game_config.stacked_observations)
+        #     ]
+        #     game_histories[i].init(stack_obs_windows[i])
+        reset_done_pipeline(init_obses.keys())
         # for priorities in self-play
         search_values_lst = [[] for _ in range(env_nums)]
         pred_values_lst = [[] for _ in range(env_nums)]
@@ -394,8 +427,15 @@ class MetadriveCollector(ISerialCollector):
 
         while True:
             with self._timer:
-                stack_obs = [game_history.step_obs() for game_history in game_histories]
+                obs = self._env.ready_obs 
+                obs_id_lst = list(obs.keys())
+                if len(obs_id_lst) == 0:
+                    continue
+                reset_done_pipeline(obs_id_lst)
+                stack_obs = [game_histories[i].step_obs() for i in obs_id_lst]
                 stack_obs = to_ndarray(stack_obs)
+                # stack_obs = [game_history.step_obs() for game_history in game_histories]
+                # stack_obs = to_ndarray(stack_obs)
                 stack_obs = prepare_metadrive_obs_lst(stack_obs)
                 if self.game_config.image_based:
                     stack_obs = torch.from_numpy(stack_obs).to(self.game_config.device).float()
@@ -403,7 +443,7 @@ class MetadriveCollector(ISerialCollector):
                     stack_obs = torch.from_numpy(np.array(stack_obs)).to(self.game_config.device)
 
                 if two_plaer_game:
-                    policy_output = self._policy.forward(stack_obs, action_mask, temperature, to_play)
+                    policy_output = self._policy.forward(stack_obs, action_mask, temperature, to_play, obs_id_lst)
                 else:
                     policy_output = self._policy.forward(stack_obs, action_mask, temperature, None)
 
@@ -524,21 +564,22 @@ class MetadriveCollector(ISerialCollector):
                     self.trajectory_pool.append((game_histories[i], priorities, dones[i]))
                     # NOTE: this is very important to save the done data to replay_buffer
                     # self.free(end_tag=True)
+                    ready_judge_dict[i] = False
 
-                    # reset the finished env and init game_histories
-                    init_obses = self._env.ready_obs
-                    init_obs = init_obses[i]['observation']
-                    init_obs = to_ndarray(init_obs)
-                    action_mask[i] = to_ndarray(init_obses[i]['action_mask'])
-                    to_play[i] = to_ndarray(init_obses[i]['to_play'])
+                    # # reset the finished env and init game_histories
+                    # init_obses = self._env.ready_obs
+                    # init_obs = init_obses[i]['observation']
+                    # init_obs = to_ndarray(init_obs)
+                    # action_mask[i] = to_ndarray(init_obses[i]['action_mask'])
+                    # to_play[i] = to_ndarray(init_obses[i]['to_play'])
 
-                    game_histories[i] = GameHistory(
-                        self._env.action_space,
-                        max_length=self.game_config.game_history_max_length,
-                        config=self.game_config
-                    )
-                    stack_obs_windows[i] = [init_obs for _ in range(self.game_config.stacked_observations)]
-                    game_histories[i].init(stack_obs_windows[i])
+                    # game_histories[i] = GameHistory(
+                    #     self._env.action_space,
+                    #     max_length=self.game_config.game_history_max_length,
+                    #     config=self.game_config
+                    # )
+                    # stack_obs_windows[i] = [init_obs for _ in range(self.game_config.stacked_observations)]
+                    # game_histories[i].init(stack_obs_windows[i])
                     last_game_histories[i] = None
                     last_game_priorities[i] = None
 

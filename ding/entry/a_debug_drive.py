@@ -45,7 +45,7 @@ metadrive_macro_config = dict(
         ),
         n_evaluator_episode=5,
         stop_value=99999,
-        collector_env_num=1,
+        collector_env_num=3,
         evaluator_env_num=1,
         wrapper=dict(),
         max_episode_steps = int(150),

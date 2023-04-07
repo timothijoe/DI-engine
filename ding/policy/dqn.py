@@ -11,7 +11,7 @@ from ding.utils.data import default_collate, default_decollate
 
 from .base_policy import Policy
 from .common_utils import default_preprocess_learn
-
+from ding.policy.tiger import Tiger
 
 @POLICY_REGISTRY.register('dqn')
 class DQNPolicy(Policy):
@@ -84,6 +84,7 @@ class DQNPolicy(Policy):
         type='dqn',
         # (bool) Whether use cuda in policy.
         cuda=False,
+        is_tiger = False,
         # (bool) Whether learning policy is the same as collecting data policy(on-policy).
         on_policy=False,
         # (bool) Whether enable priority experience sample.
@@ -175,6 +176,8 @@ class DQNPolicy(Policy):
         self._priority_IS_weight = self._cfg.priority_IS_weight
         # Optimizer
         self._optimizer = Adam(self._model.parameters(), lr=self._cfg.learn.learning_rate)
+        if self._cfg.is_tiger:
+            self._optimizer = Tiger(self._model.parameters(), lr=self._cfg.learn.learning_rate)
 
         self._gamma = self._cfg.discount_factor
         self._nstep = self._cfg.nstep

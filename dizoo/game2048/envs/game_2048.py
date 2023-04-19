@@ -29,7 +29,7 @@ class Game2048Env(gym.Env):
         channel_last=True,
         obs_type='raw_observation',  # options=['raw_observation', 'dict_observation']
         reward_normalize=True,
-        reward_scale=2048,
+        reward_scale=100,
         max_tile=int(2**16),  # 2**11=2048, 2**16=65536
         delay_reward_step=0,
         prob_random_agent=0.,
@@ -58,7 +58,6 @@ class Game2048Env(gym.Env):
         self.reward_scale = cfg.reward_scale
         self.max_tile = cfg.max_tile
         self.max_episode_steps = cfg.max_episode_steps
-        self.episode_length = 0
         self.is_collect = cfg.is_collect
 
         self.size = 4
@@ -109,6 +108,7 @@ class Game2048Env(gym.Env):
 
     def reset(self):
         """Reset the game board-matrix and add 2 tiles."""
+        self.episode_length = 0
         self.board = np.zeros((self.h, self.w), np.int32)
         self.episode_return = 0
         self._final_eval_reward = 0.0
@@ -420,7 +420,9 @@ class Game2048Env(gym.Env):
     def create_collector_env_cfg(cfg: dict) -> List[dict]:
         collector_env_num = cfg.pop('collector_env_num')
         cfg = copy.deepcopy(cfg)
-        cfg.reward_normalize = True
+        #cfg.reward_normalize = True
+        # when collect data, sometimes we need to normalize the reward
+        # reward_normalize is determined by the config
         cfg.is_collect = True
         return [cfg for _ in range(collector_env_num)]
 
@@ -428,6 +430,7 @@ class Game2048Env(gym.Env):
     def create_evaluator_env_cfg(cfg: dict) -> List[dict]:
         evaluator_env_num = cfg.pop('evaluator_env_num')
         cfg = copy.deepcopy(cfg)
+        # when evaluate, we don't need to normalize the reward
         cfg.reward_normalize = False
         cfg.is_collect = False
         return [cfg for _ in range(evaluator_env_num)]

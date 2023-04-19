@@ -29,12 +29,10 @@ class Game2048Env(gym.Env):
         channel_last=True,
         obs_type='raw_observation',  # options=['raw_observation', 'dict_observation']
         reward_normalize=True,
-        reward_scale=2048,
-        max_tile=int(2**16),  # 2**11=2048, 2**16=65536
+        max_tile=2048,
         delay_reward_step=0,
         prob_random_agent=0.,
         max_episode_steps=int(1e4),
-        is_collect=True,
     )
     metadata = {'render.modes': ['human', 'ansi', 'rgb_array']}
 
@@ -55,11 +53,9 @@ class Game2048Env(gym.Env):
         self.channel_last = cfg.channel_last
         self.obs_type = cfg.obs_type
         self.reward_normalize = cfg.reward_normalize
-        self.reward_scale = cfg.reward_scale
         self.max_tile = cfg.max_tile
         self.max_episode_steps = cfg.max_episode_steps
         self.episode_length = 0
-        self.is_collect = cfg.is_collect
 
         self.size = 4
         self.w = self.size
@@ -107,6 +103,57 @@ class Game2048Env(gym.Env):
         assert max_tile is None or isinstance(max_tile, int)
         self.max_tile = max_tile
 
+    def step(self, action):
+        """Perform one step of the game. This involves moving and adding a new tile."""
+        self.episode_length += 1
+        logging.debug("Action {}".format(action))
+        info = {'illegal_move': False}
+        try:
+            reward = float(self.move(action))
+            self.episode_return += reward
+            assert reward <= 2 ** (self.w * self.h)
+            self.add_random_2_4_tile()
+            done = self.is_end()
+            reward = float(reward)
+        except IllegalMove as e:
+            logging.debug("Illegal move")
+            info['illegal_move'] = True
+            done = False
+            reward = self.illegal_move_reward
+
+        if self.episode_length >= self.max_episode_steps:
+            # print("episode_length: {}".format(self.episode_length))
+            done = True
+
+        observation = encoding_board(self.board)
+        observation = observation.astype(np.float32)
+        reward = to_ndarray([reward]).astype(np.float32)  # wrapped to be transferred to a Tensor with shape (1,)
+        assert observation.shape == (4, 4, 16)
+
+        if not self.channel_last:
+            # move channel dim to fist axis
+            # (W, H, C) -> (C, W, H)
+            # e.g. (4, 4, 16) -> (16, 4, 4)
+            observation = np.transpose(observation, [2, 0, 1])
+
+        action_mask = np.ones(4, 'int8')
+        if self.obs_type == 'dict_observation':
+            observation = {'observation': observation, 'action_mask': action_mask, 'to_play': -1}
+
+        if self.reward_normalize:
+            reward_normalize = reward / self.max_tile
+
+        info = {"raw_reward": reward, "max_tile": self.highest(), 'highest': self.highest()}
+
+        self._final_eval_reward += reward
+        if done:
+            info['eval_episode_return'] = self._final_eval_reward
+
+        if self.reward_normalize:
+            return BaseEnvTimestep(observation, reward_normalize, done, info)
+        else:
+            return BaseEnvTimestep(observation, reward, done, info)
+
     def reset(self):
         """Reset the game board-matrix and add 2 tiles."""
         self.board = np.zeros((self.h, self.w), np.int32)
@@ -134,61 +181,6 @@ class Game2048Env(gym.Env):
             observation = {'observation': observation, 'action_mask': action_mask, 'to_play': -1}
 
         return observation
-
-    def step(self, action):
-        """Perform one step of the game. This involves moving and adding a new tile."""
-        self.episode_length += 1
-        logging.debug("Action {}".format(action))
-        info = {'illegal_move': False}
-        try:
-            reward = float(self.move(action))
-            self.episode_return += reward
-            assert reward <= 2 ** (self.w * self.h)
-            self.add_random_2_4_tile()
-            done = self.is_end()
-            reward = float(reward)
-        except IllegalMove as e:
-            logging.debug("Illegal move")
-            info['illegal_move'] = True
-            if self.is_collect:
-                done = False
-            else:
-                # TODO(pu): if illegal move, should we return done=True?
-                done = True
-            reward = self.illegal_move_reward
-
-        if self.episode_length >= self.max_episode_steps:
-            # print("episode_length: {}".format(self.episode_length))
-            done = True
-
-        observation = encoding_board(self.board)
-        observation = observation.astype(np.float32)
-        reward = to_ndarray([reward]).astype(np.float32) 
-        assert observation.shape == (4, 4, 16)
-
-        if not self.channel_last:
-            # move channel dim to fist axis
-            # (W, H, C) -> (C, W, H)
-            # e.g. (4, 4, 16) -> (16, 4, 4)
-            observation = np.transpose(observation, [2, 0, 1])
-
-        action_mask = np.ones(4, 'int8')
-        if self.obs_type == 'dict_observation':
-            observation = {'observation': observation, 'action_mask': action_mask, 'to_play': -1}
-
-        if self.reward_normalize:
-            reward_normalize = reward / self.reward_scale
-
-        info = {"raw_reward": reward, "max_tile": self.highest(), 'highest': self.highest()}
-
-        self._final_eval_reward += reward
-        if done:
-            info['eval_episode_return'] = self._final_eval_reward
-
-        if self.reward_normalize:
-            return BaseEnvTimestep(observation, reward_normalize, done, info)
-        else:
-            return BaseEnvTimestep(observation, reward, done, info)
 
     def render(self, mode='human'):
         if mode == 'rgb_array':
@@ -421,7 +413,6 @@ class Game2048Env(gym.Env):
         collector_env_num = cfg.pop('collector_env_num')
         cfg = copy.deepcopy(cfg)
         cfg.reward_normalize = True
-        cfg.is_collect = True
         return [cfg for _ in range(collector_env_num)]
 
     @staticmethod
@@ -429,7 +420,6 @@ class Game2048Env(gym.Env):
         evaluator_env_num = cfg.pop('evaluator_env_num')
         cfg = copy.deepcopy(cfg)
         cfg.reward_normalize = False
-        cfg.is_collect = False
         return [cfg for _ in range(evaluator_env_num)]
 
     def __repr__(self) -> str:

@@ -9,6 +9,8 @@ game2048_dqn_config = dict(
         obs_shape=(16, 4, 4),
         stop_value=int(1e6),
         channel_last=False,
+        reward_scale=100,
+        
     ),
     policy=dict(
         cuda=True,
@@ -46,7 +48,8 @@ game2048_dqn_create_config = dict(
         type='game_2048',
         import_names=['dizoo.game2048.envs.game_2048'],
     ),
-    env_manager=dict(type='subprocess'),
+    env_manager=dict(type='base', 
+                     shared_memory=False),
     policy=dict(type='dqn'),
 )
 game2048_dqn_create_config = EasyDict(game2048_dqn_create_config)

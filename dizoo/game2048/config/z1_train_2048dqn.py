@@ -1,15 +1,16 @@
 from easydict import EasyDict
 
 game2048_dqn_config = dict(
-    exp_name='game2048_dqn_seed0',
+    exp_name='game2048_dqn_v1',
     env=dict(
-        collector_env_num=1,
-        evaluator_env_num=1,
+        collector_env_num=8,
+        evaluator_env_num=8,
         n_evaluator_episode=3,
         obs_shape=(16, 4, 4),
         stop_value=int(1e6),
         channel_last=False,
         reward_scale=100,
+        reward_normalize=True,
         
     ),
     policy=dict(

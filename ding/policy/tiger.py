@@ -5,7 +5,7 @@ from torch.optim.optimizer import Optimizer
 class Tiger(Optimizer):
   r"""A Pytorch Implementation of Tiger."""
 
-  def __init__(self, params, lr=1e-3, beta=0.965, weight_decay=0.01):
+  def __init__(self, params, lr=1e-3, beta=0.965, weight_decay=0.0001):
     """Initialize the hyperparameters.
     Args:
         params (iterable): iterable of parameters to optimize or dicts defining

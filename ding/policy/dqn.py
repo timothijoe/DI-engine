@@ -85,6 +85,7 @@ class DQNPolicy(Policy):
         # (bool) Whether use cuda in policy.
         cuda=False,
         is_tiger = False,
+        tiger_zero = False,
         # (bool) Whether learning policy is the same as collecting data policy(on-policy).
         on_policy=False,
         # (bool) Whether enable priority experience sample.
@@ -175,9 +176,14 @@ class DQNPolicy(Policy):
         self._priority = self._cfg.priority
         self._priority_IS_weight = self._cfg.priority_IS_weight
         # Optimizer
-        self._optimizer = Adam(self._model.parameters(), lr=self._cfg.learn.learning_rate)
+        
         if self._cfg.is_tiger:
-            self._optimizer = Tiger(self._model.parameters(), lr=self._cfg.learn.learning_rate)
+            if self._cfg.tiger_zero:
+                self._optimizer = Tiger(self._model.parameters(), lr=self._cfg.learn.learning_rate, weight_decay=0)
+            else:
+                self._optimizer = Tiger(self._model.parameters(), lr=self._cfg.learn.learning_rate)
+        else:
+            self._optimizer = Adam(self._model.parameters(), lr=self._cfg.learn.learning_rate)
 
         self._gamma = self._cfg.discount_factor
         self._nstep = self._cfg.nstep
@@ -254,6 +260,11 @@ class DQNPolicy(Policy):
         # ====================
         self._optimizer.zero_grad()
         loss.backward()
+        # ====================
+        # added by zt, to test tiger grad norm
+        total_grad_norm_before_clip = torch.nn.utils.clip_grad_norm_(self._learn_model.parameters(), 10000)
+        # ====================       
+        
         if self._cfg.multi_gpu:
             self.sync_gradients(self._learn_model)
         self._optimizer.step()
@@ -268,12 +279,13 @@ class DQNPolicy(Policy):
             'q_value': q_value.mean().item(),
             'target_q_value': target_q_value.mean().item(),
             'priority': td_error_per_sample.abs().tolist(),
+            'total_grad_norm_before_clip': total_grad_norm_before_clip,
             # Only discrete action satisfying len(data['action'])==1 can return this and draw histogram on tensorboard.
             # '[histogram]action_distribution': data['action'],
         }
 
     def _monitor_vars_learn(self) -> List[str]:
-        return ['cur_lr', 'total_loss', 'q_value']
+        return ['cur_lr', 'total_loss', 'q_value','total_grad_norm_before_clip',]
 
     def _state_dict_learn(self) -> Dict[str, Any]:
         """

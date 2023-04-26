@@ -97,6 +97,17 @@ class DQN(nn.Module):
             >>> outputs = model(inputs)
             >>> assert isinstance(outputs, dict) and outputs['logit'].shape == torch.Size([4, 6])
         """
+        if type(x).__name__ == 'dict':
+            action_mask = x['action_mask']
+            x = x['observation']
+            x = self.encoder(x)
+            x = self.head(x)    
+            # dict_tensor = {}
+            # dict_tensor['logit'] = x 
+            action_mask.to(x['logit'].device)
+            x['action_mask'] = action_mask 
+            return x      
+        
         x = self.encoder(x)
         x = self.head(x)
         return x

@@ -11,7 +11,8 @@ game2048_dqn_config = dict(
         channel_last=False,
         reward_scale=100,
         obs_type='dict_observation',  # options=['raw_observation', 'dict_observation']
-        reward_normalize=False,
+        ignore_legal_actions=False,
+        
     ),
     policy=dict(
         cuda=True,

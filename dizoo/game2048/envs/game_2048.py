@@ -35,6 +35,7 @@ class Game2048Env(gym.Env):
         prob_random_agent=0.,
         max_episode_steps=int(1e4),
         is_collect=True,
+        ignore_legal_actions = True,
     )
     metadata = {'render.modes': ['human', 'ansi', 'rgb_array']}
 
@@ -59,6 +60,7 @@ class Game2048Env(gym.Env):
         self.max_tile = cfg.max_tile
         self.max_episode_steps = cfg.max_episode_steps
         self.is_collect = cfg.is_collect
+        self.ignore_legal_actions = cfg.ignore_legal_actions
 
         self.size = 4
         self.w = self.size
@@ -112,6 +114,7 @@ class Game2048Env(gym.Env):
         self.board = np.zeros((self.h, self.w), np.int32)
         self.episode_return = 0
         self._final_eval_reward = 0.0
+        self.should_done = False
 
         logging.debug("Adding tiles")
         # TODO(pu): why add_tiles twice?
@@ -246,7 +249,10 @@ class Game2048Env(gym.Env):
         tile_probabilities = np.array([0.9, 0.1])
         val = self.np_random.choice(possible_tiles, 1, p=tile_probabilities)[0]
         empty_location = self.get_empty_location()
-        assert empty_location.shape[0]
+        # assert empty_location.shape[0]
+        if empty_location.shape[0] == 0:
+            self.should_done = True  
+            return 
         empty_idx = self.np_random.choice(empty_location.shape[0])
         empty = empty_location[empty_idx]
         logging.debug("Adding %s at %s", val, (empty[0], empty[1]))
@@ -321,8 +327,8 @@ class Game2048Env(gym.Env):
                     if not trial:
                         for y in ry:
                             self.set(x, y, new[y])
-        if not changed:
-            raise IllegalMove
+        # if not changed:
+        #     raise IllegalMove
 
         return move_reward
 
@@ -336,6 +342,8 @@ class Game2048Env(gym.Env):
         Returns:
             - legal_actions (:obj:`list`): The legal actions.
         """
+        if self.ignore_legal_actions:
+            return [0,1,2,3]
         legal_actions = []
         for direction in range(4):
             changed = False
@@ -426,6 +434,8 @@ class Game2048Env(gym.Env):
         elif len(self.legal_actions) == 0:
             # the agent don't have legal_actions to move, so the episode is done
             return True
+        elif self.should_done:
+            return True
         else:
             return False
 
@@ -504,7 +514,9 @@ def encoding_board(flat, num_of_template_tiles=16):
     """
     # TODO(pu): the more elegant one-hot encoding implementation
     # template_tiles is what each layer represents
-    template_tiles = 2 ** (np.arange(num_of_template_tiles, dtype=int) + 1)
+    # template_tiles = 2 ** (np.arange(num_of_template_tiles, dtype=int) + 1)
+    template_tiles = 2 ** (np.arange(num_of_template_tiles, dtype=int))
+    template_tiles[0] = 0
     # layered is the flat board repeated num_of_template_tiles times
     layered = np.repeat(flat[:, :, np.newaxis], num_of_template_tiles, axis=-1)
 

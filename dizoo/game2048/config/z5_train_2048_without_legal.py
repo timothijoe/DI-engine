@@ -1,7 +1,7 @@
 from easydict import EasyDict
 
 game2048_dqn_config = dict(
-    exp_name='game2048_dqn_v4',
+    exp_name='game2048_dqn_v5',
     env=dict(
         collector_env_num=8,
         evaluator_env_num=3,
@@ -11,6 +11,7 @@ game2048_dqn_config = dict(
         channel_last=False,
         reward_scale=100,
         obs_type='dict_observation',  # options=['raw_observation', 'dict_observation']
+        ignore_legal_actions=False,
         
     ),
     policy=dict(
@@ -22,10 +23,10 @@ game2048_dqn_config = dict(
             encoder_hidden_size_list=[128, 128, 128, 256],
         ),
         nstep=10,
-        discount_factor=0.999,
+        discount_factor=0.99,
         learn=dict(
-            update_per_collect=10,
-            batch_size=1024,
+            update_per_collect=100,
+            batch_size=128,
             learning_rate=0.003,
             target_update_freq=500,
         ),
@@ -36,7 +37,7 @@ game2048_dqn_config = dict(
                 type='exp',
                 start=1.,
                 end=0.05,
-                decay=int(1e5),
+                decay=int(1e6),
             ),
             replay_buffer=dict(replay_buffer_size=1000000, ),
         ),

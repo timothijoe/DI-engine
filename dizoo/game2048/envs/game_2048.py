@@ -78,7 +78,7 @@ class Game2048Env(gym.Env):
         self.set_max_tile(max_tile=self.max_tile)
 
         if self.reward_normalize:
-            self._reward_range = (0., 1)
+            self._reward_range = (0., self.max_tile)
         else:
             self._reward_range = (0., self.max_tile)
 
@@ -151,18 +151,20 @@ class Game2048Env(gym.Env):
             raise IllegalActionError(f"You input illegal action: {action}, the legal_actions are {self.legal_actions}. ")
         
         empty_num1 = len(self.get_empty_location())
-        reward_old = float(self.move(action))
+        reward_eval = float(self.move(action))
         empty_num2 = len(self.get_empty_location())
-        reward = float(empty_num2 - empty_num1)
-        max_num = max(self.board)
+        reward_collect = float(empty_num2 - empty_num1)
+        #reward_collect = float(empty_num1 - empty_num2)
+        max_num = np.max(self.board)
         if max_num > self.max_value:
-            reward += np.log2(max_num) * 0.1
+            reward_collect += np.log2(max_num) * 0.1
             self.max_value = max_num
-        self.episode_return += reward
-        assert reward <= 2 ** (self.w * self.h)
+        self.episode_return += reward_eval
+        assert reward_eval <= 2 ** (self.w * self.h)
         self.add_random_2_4_tile()
         done = self.is_end()
-        reward = float(reward)
+        reward_collect = float(reward_collect)
+        reward_eval = float(reward_eval)
 
         if self.episode_length >= self.max_episode_steps:
             # print("episode_length: {}".format(self.episode_length))
@@ -170,7 +172,7 @@ class Game2048Env(gym.Env):
 
         observation = encoding_board(self.board)
         observation = observation.astype(np.float32)
-        reward = to_ndarray([reward]).astype(np.float32) 
+        
         assert observation.shape == (4, 4, 16)
 
         if not self.channel_last:
@@ -186,10 +188,13 @@ class Game2048Env(gym.Env):
             observation = {'observation': observation, 'action_mask': action_mask, 'to_play': -1}
 
         if self.reward_normalize:
-            reward_normalize = reward / self.reward_scale
+            reward_normalize = reward_collect
             self._final_eval_reward += reward_normalize
+            reward = reward_collect
         else:
-            self._final_eval_reward += reward
+            self._final_eval_reward += reward_eval
+            reward = reward_eval
+        reward = to_ndarray([reward]).astype(np.float32) 
 
         info = {"raw_reward": reward, "max_tile": self.highest(), 'highest': self.highest()}
 
@@ -197,7 +202,7 @@ class Game2048Env(gym.Env):
             info['eval_episode_return'] = self._final_eval_reward
 
         if self.reward_normalize:
-            return BaseEnvTimestep(observation, reward_normalize, done, info)
+            return BaseEnvTimestep(observation, reward, done, info)
         else:
             return BaseEnvTimestep(observation, reward, done, info)
 

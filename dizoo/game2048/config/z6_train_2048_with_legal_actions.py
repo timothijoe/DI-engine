@@ -11,7 +11,7 @@ game2048_dqn_config = dict(
         channel_last=False,
         reward_scale=100,
         obs_type='dict_observation',  # options=['raw_observation', 'dict_observation']
-        reward_normalize=False,
+        reward_normalize=True,
     ),
     policy=dict(
         cuda=True,
@@ -26,7 +26,7 @@ game2048_dqn_config = dict(
         learn=dict(
             update_per_collect=10,
             batch_size=1024,
-            learning_rate=0.003,
+            learning_rate=0.0003,
             target_update_freq=500,
         ),
         collect=dict(n_sample=1024, ),
@@ -36,7 +36,7 @@ game2048_dqn_config = dict(
                 type='exp',
                 start=1.,
                 end=0.05,
-                decay=int(1e5),
+                decay=int(1e6),
             ),
             replay_buffer=dict(replay_buffer_size=1000000, ),
         ),

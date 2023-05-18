@@ -67,6 +67,8 @@ class Game2048Env(gym.Env):
         self.h = self.size
         self.squares = self.size * self.size
 
+        self.max_value = 2
+
         self.episode_return = 0
         # Members for gym implementation:
         self._action_space = spaces.Discrete(4)
@@ -115,6 +117,7 @@ class Game2048Env(gym.Env):
         self.episode_return = 0
         self._final_eval_reward = 0.0
         self.should_done = False
+        self.max_value = 2
 
         logging.debug("Adding tiles")
         # TODO(pu): why add_tiles twice?
@@ -146,9 +149,15 @@ class Game2048Env(gym.Env):
 
         if action not in self.legal_actions:
             raise IllegalActionError(f"You input illegal action: {action}, the legal_actions are {self.legal_actions}. ")
-
-
-        reward = float(self.move(action))
+        
+        empty_num1 = len(self.get_empty_location())
+        reward_old = float(self.move(action))
+        empty_num2 = len(self.get_empty_location())
+        reward = float(empty_num2 - empty_num1)
+        max_num = max(self.board)
+        if max_num > self.max_value:
+            reward += np.log2(max_num) * 0.1
+            self.max_value = max_num
         self.episode_return += reward
         assert reward <= 2 ** (self.w * self.h)
         self.add_random_2_4_tile()

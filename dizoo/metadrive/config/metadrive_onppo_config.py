@@ -16,7 +16,7 @@ metadrive_basic_config = dict(
     env=dict(
         metadrive=dict(
             use_render=False,
-            traffic_density=0.10,  # Density of vehicles occupying the roads, range in [0,1]
+            traffic_density=0.15,  # Density of vehicles occupying the roads, range in [0,1]
             map='XSOS',  # Int or string: an easy way to fill map_config
             horizon=4000,  # Max step number
             driving_reward=1.0,  # Reward to encourage agent to move forward.
@@ -33,9 +33,9 @@ metadrive_basic_config = dict(
             context='spawn',
         ),
         n_evaluator_episode=16,
-        stop_value=255,
-        collector_env_num=1,
-        evaluator_env_num=1,
+        stop_value=99999,
+        collector_env_num=16,
+        evaluator_env_num=16,
     ),
     policy=dict(
         cuda=True,

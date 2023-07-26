@@ -242,6 +242,7 @@ class MetaDrivePPOOriginEnv(BaseEnv):
             done_info[TerminationState.CRASH_VEHICLE] or done_info[TerminationState.CRASH_OBJECT]
             or done_info[TerminationState.CRASH_BUILDING]
         )
+        done_info['complete_ratio'] = clip(self.already_go_dist/ self.navi_distance + 0.05, 0.0, 1.0)
         return done, done_info
 
     def reward_function(self, vehicle_id: str):
@@ -252,7 +253,9 @@ class MetaDrivePPOOriginEnv(BaseEnv):
         """
         vehicle = self.vehicles[vehicle_id]
         step_info = dict()
-
+        if self._compute_navi_dist:
+            self.navi_distance = self.get_navigation_len(vehicle)
+            self._compute_navi_dist = False
         # Reward for moving forward in current lane
         if vehicle.lane in vehicle.navigation.current_ref_lanes:
             current_lane = vehicle.lane
@@ -263,6 +266,7 @@ class MetaDrivePPOOriginEnv(BaseEnv):
             positive_road = 1 if not current_road.is_negative_road() else -1
         long_last, _ = current_lane.local_coordinates(vehicle.last_position)
         long_now, lateral_now = current_lane.local_coordinates(vehicle.position)
+        self.already_go_dist += (long_now - long_last)
 
         # reward for lane keeping, without it vehicle can learn to overtake but fail to keep in lane
         if self.config["use_lateral_reward"]:
@@ -289,6 +293,9 @@ class MetaDrivePPOOriginEnv(BaseEnv):
     def _get_reset_return(self):
         ret = {}
         self.engine.after_step()
+        self.already_go_dist = 0
+        self._compute_navi_dist = True 
+        self.navi_distance = 100.0
         for v_id, v in self.vehicles.items():
             self.observations[v_id].reset(self, v)
             ret[v_id] = self.observations[v_id].observe(v)
@@ -362,3 +369,22 @@ class MetaDrivePPOOriginEnv(BaseEnv):
     def clone(self, caller: str):
         cfg = copy.deepcopy(self.raw_cfg)
         return MetaDrivePPOOriginEnv(cfg)
+
+    def get_navigation_len(self, vehicle):
+        checkpoints = vehicle.navigation.checkpoints
+        road_network = vehicle.navigation.map.road_network
+        total_dist = 0
+        assert len(checkpoints) >=2
+        for check_num in range(0, len(checkpoints)-1):
+            front_node = checkpoints[check_num]
+            end_node = checkpoints[check_num+1] 
+            cur_lanes = road_network.graph[front_node][end_node]
+            target_lane_num = int(len(cur_lanes) / 2)
+            target_lane = cur_lanes[target_lane_num]
+            target_lane_length = target_lane.length
+            total_dist += target_lane_length 
+
+        if hasattr(vehicle.navigation, 'u_turn_case'):
+            if vehicle.navigation.u_turn_case is True:
+                total_dist += 35
+        return total_dist

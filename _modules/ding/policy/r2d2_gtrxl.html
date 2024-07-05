@@ -293,7 +293,7 @@
                 
   <h1>Source code for ding.policy.r2d2_gtrxl</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">copy</span>
-<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">namedtuple</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span>
 
@@ -304,9 +304,6 @@
 <span class="kn">from</span> <span class="nn">ding.utils</span> <span class="kn">import</span> <span class="n">POLICY_REGISTRY</span>
 <span class="kn">from</span> <span class="nn">ding.utils.data</span> <span class="kn">import</span> <span class="n">timestep_collate</span><span class="p">,</span> <span class="n">default_collate</span><span class="p">,</span> <span class="n">default_decollate</span>
 <span class="kn">from</span> <span class="nn">.base_policy</span> <span class="kn">import</span> <span class="n">Policy</span>
-<span class="kn">import</span> <span class="nn">torch</span>
-
-<span class="kn">from</span> <span class="nn">ding.model.common.head</span> <span class="kn">import</span> <span class="o">*</span>
 
 
 <div class="viewcode-block" id="R2D2GTrXLPolicy"><a class="viewcode-back" href="../../../12_policies/gtrxl.html#ding.policy.r2d2_gtrxl.R2D2GTrXLPolicy">[docs]</a><span class="nd">@POLICY_REGISTRY</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s1">&#39;r2d2_gtrxl&#39;</span><span class="p">)</span>
@@ -352,11 +349,9 @@
 <span class="sd">           | ``done``                                   | calculation.                           | fake termination env</span>
 <span class="sd">        15 ``collect.n_sample`` int      [8, 128]       | The number of training samples of a    | It varies from</span>
 <span class="sd">                                                        | call of collector.                     | different envs</span>
-<span class="sd">        16 | ``collect.unroll`` int      25             | unroll length of an iteration          | unroll_len&gt;1</span>
+<span class="sd">        16 | ``collect.seq``    int      20             | Training sequence length               | unroll_len&gt;=seq_len&gt;1</span>
 <span class="sd">           | ``_len``</span>
-<span class="sd">        17 | ``collect.seq``    int      20             | Training sequence length               | unroll_len&gt;=seq_len&gt;1</span>
-<span class="sd">           | ``_len``</span>
-<span class="sd">        18 | ``learn.init_``    str      zero           | &#39;zero&#39; or &#39;old&#39;, how to initialize the |</span>
+<span class="sd">        17 | ``learn.init_``    str      zero           | &#39;zero&#39; or &#39;old&#39;, how to initialize the |</span>
 <span class="sd">           | ``memory``                                 | memory before each training iteration. |</span>
 <span class="sd">        == ==================== ======== ============== ======================================== =======================</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -378,7 +373,7 @@
         <span class="n">discount_factor</span><span class="o">=</span><span class="mf">0.99</span><span class="p">,</span>
         <span class="c1"># (int) N-step reward for target q_value estimation</span>
         <span class="n">nstep</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-        <span class="c1"># how many steps to use as burnin</span>
+        <span class="c1"># (int) How many steps to use in burnin phase</span>
         <span class="n">burnin_step</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="c1"># (int) trajectory length</span>
         <span class="n">unroll_len</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span>
@@ -424,7 +419,7 @@
     <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">default_model</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-        <span class="k">return</span> <span class="s1">&#39;gtrxl_discrete&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;ding.model.template.q_learning&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="s1">&#39;gtrxldqn&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;ding.model.template.q_learning&#39;</span><span class="p">]</span>
 
 <div class="viewcode-block" id="R2D2GTrXLPolicy._init_learn"><a class="viewcode-back" href="../../../12_policies/gtrxl.html#ding.policy.r2d2_gtrxl.R2D2GTrXLPolicy._init_learn">[docs]</a>    <span class="k">def</span> <span class="nf">_init_learn</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -455,7 +450,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_seq_len</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="o">.</span><span class="n">seq_len</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_value_rescale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="o">.</span><span class="n">learn</span><span class="o">.</span><span class="n">value_rescale</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_init_memory</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="o">.</span><span class="n">learn</span><span class="o">.</span><span class="n">init_memory</span>
-        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_memory</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;zero&#39;</span><span class="p">,</span> <span class="s1">&#39;old&#39;</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_memory</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;zero&#39;</span><span class="p">,</span> <span class="s1">&#39;old&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_memory</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_target_model</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">)</span>
 
@@ -649,7 +644,6 @@
 <span class="sd">            Collect mode init method. Called by ``self.__init__``.</span>
 <span class="sd">            Init unroll length and sequence len, collect model.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">assert</span> <span class="s1">&#39;unroll_len&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="o">.</span><span class="n">collect</span><span class="p">,</span> <span class="s2">&quot;Use default unroll_len&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_nstep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="o">.</span><span class="n">nstep</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_gamma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="o">.</span><span class="n">discount_factor</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_unroll_len</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="o">.</span><span class="n">unroll_len</span>
@@ -817,9 +811,8 @@
   <script type="text/javascript" id="documentation_options" data-url_root="../../../"
     src="../../../_static/documentation_options.js"></script>
   <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-  <script src="../../../_static/jquery.js"></script>
-  <script src="../../../_static/underscore.js"></script>
   <script src="../../../_static/doctools.js"></script>
+  <script src="../../../_static/sphinx_highlight.js"></script>
   
 
   

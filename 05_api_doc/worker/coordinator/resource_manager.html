@@ -9,7 +9,7 @@
 
 <head>
   <meta charset="utf-8">
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
@@ -35,8 +35,6 @@
   <link rel="stylesheet" href="../../../_static/css/style.css" type="text/css" />
   <link rel="index" title="Index" href="../../../genindex.html" />
   <link rel="search" title="Search" href="../../../search.html" />
-  <link rel="next" title="RL Utils" href="../../rl_utils/index.html" />
-  <link rel="prev" title="worker.coordinator.comm_coordinator" href="comm_coordinator.html" />
     <link href="../../../_static/css/style.css" rel="stylesheet" type="text/css">
 
 
@@ -205,13 +203,13 @@
         
         
         <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
-<ul class="current">
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../00_intro/index.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../01_quickstart/index.html">Quickstart</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../02_algo/index.html">RL Algorithm Taxonomy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../03_system/index.html">System Design</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../04_best_practice/index.html">Best Practice</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../../index.html">API Doc</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">API Doc</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../06_faq/index.html">FAQ</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reinforcement Learning Tutorial</span></p>
@@ -266,10 +264,6 @@
       </li>
 
         
-          <li><a href="../../index.html">API Doc</a> &gt;</li>
-        
-          <li><a href="index.html">Coordinator</a> &gt;</li>
-        
       <li>worker.coordinator.resource_manager</li>
     
     
@@ -301,12 +295,12 @@
               <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
                 
   <section id="worker-coordinator-resource-manager">
-<h1>worker.coordinator.resource_manager<a class="headerlink" href="#worker-coordinator-resource-manager" title="Permalink to this headline">¶</a></h1>
+<h1>worker.coordinator.resource_manager<a class="headerlink" href="#worker-coordinator-resource-manager" title="Permalink to this heading">¶</a></h1>
 <section id="naiveresourcemanager">
-<h2>NaiveResourceManager<a class="headerlink" href="#naiveresourcemanager" title="Permalink to this headline">¶</a></h2>
+<h2>NaiveResourceManager<a class="headerlink" href="#naiveresourcemanager" title="Permalink to this heading">¶</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="ding.worker.coordinator.resource_manager.NaiveResourceManager">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">ding.worker.coordinator.resource_manager.</span></span><span class="sig-name descname"><span class="pre">NaiveResourceManager</span></span><a class="reference internal" href="../../../_modules/ding/worker/coordinator/resource_manager.html#NaiveResourceManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ding.worker.coordinator.resource_manager.NaiveResourceManager" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ding.worker.coordinator.resource_manager.</span></span><span class="sig-name descname"><span class="pre">NaiveResourceManager</span></span><a class="reference internal" href="../../../_modules/ding/worker/coordinator/resource_manager.html#NaiveResourceManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ding.worker.coordinator.resource_manager.NaiveResourceManager" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="simple">
 <dt>Overview:</dt><dd><p>the naive resource manager</p>
 </dd>
@@ -324,7 +318,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ding.worker.coordinator.resource_manager.NaiveResourceManager.assign_collector">
-<span class="sig-name descname"><span class="pre">assign_collector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">collector_task</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../../../_modules/ding/worker/coordinator/resource_manager.html#NaiveResourceManager.assign_collector"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ding.worker.coordinator.resource_manager.NaiveResourceManager.assign_collector" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">assign_collector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">collector_task</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../../../_modules/ding/worker/coordinator/resource_manager.html#NaiveResourceManager.assign_collector"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ding.worker.coordinator.resource_manager.NaiveResourceManager.assign_collector" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="simple">
 <dt>Overview:</dt><dd><p>assign the collector_task randomly and return the resouce info</p>
 </dd>
@@ -337,7 +331,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ding.worker.coordinator.resource_manager.NaiveResourceManager.assign_learner">
-<span class="sig-name descname"><span class="pre">assign_learner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">learner_task</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../../../_modules/ding/worker/coordinator/resource_manager.html#NaiveResourceManager.assign_learner"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ding.worker.coordinator.resource_manager.NaiveResourceManager.assign_learner" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">assign_learner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">learner_task</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../../../_modules/ding/worker/coordinator/resource_manager.html#NaiveResourceManager.assign_learner"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ding.worker.coordinator.resource_manager.NaiveResourceManager.assign_learner" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="simple">
 <dt>Overview:</dt><dd><p>assign the learner_task randomly and return the resouce info</p>
 </dd>
@@ -350,7 +344,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ding.worker.coordinator.resource_manager.NaiveResourceManager.update">
-<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">worker_id</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resource_info</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../../../_modules/ding/worker/coordinator/resource_manager.html#NaiveResourceManager.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ding.worker.coordinator.resource_manager.NaiveResourceManager.update" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">worker_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resource_info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../../../_modules/ding/worker/coordinator/resource_manager.html#NaiveResourceManager.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ding.worker.coordinator.resource_manager.NaiveResourceManager.update" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="simple">
 <dt>Overview:</dt><dd><p>update the reource info</p>
 </dd>
@@ -367,18 +361,6 @@
               
             </div>
             <footer>
-  
-  <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-    
-    <a href="../../rl_utils/index.html" class="btn btn-neutral float-right" title="RL Utils" accesskey="n"
-      rel="next">Next <img src="../../../_static/images/chevron-right-blue.svg"
-        class="next-page"></a>
-    
-    
-    <a href="comm_coordinator.html" class="btn btn-neutral" title="worker.coordinator.comm_coordinator" accesskey="p"
-      rel="prev"><img src="../../../_static/images/chevron-right-blue.svg" class="previous-page"> Previous</a>
-    
-  </div>
   
 
   <hr>
@@ -406,7 +388,16 @@
             <div class="pytorch-side-scroll" id="pytorch-side-scroll-right">
               <ul>
 <li><a class="reference internal" href="#">worker.coordinator.resource_manager</a><ul>
-<li><a class="reference internal" href="#naiveresourcemanager">NaiveResourceManager</a></li>
+<li><a class="reference internal" href="#naiveresourcemanager">NaiveResourceManager</a><ul>
+<li><a class="reference internal" href="#ding.worker.coordinator.resource_manager.NaiveResourceManager"><code class="docutils literal notranslate"><span class="pre">NaiveResourceManager</span></code></a><ul>
+<li><a class="reference internal" href="#ding.worker.coordinator.resource_manager.NaiveResourceManager.__init__"><code class="docutils literal notranslate"><span class="pre">NaiveResourceManager.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#ding.worker.coordinator.resource_manager.NaiveResourceManager.assign_collector"><code class="docutils literal notranslate"><span class="pre">NaiveResourceManager.assign_collector()</span></code></a></li>
+<li><a class="reference internal" href="#ding.worker.coordinator.resource_manager.NaiveResourceManager.assign_learner"><code class="docutils literal notranslate"><span class="pre">NaiveResourceManager.assign_learner()</span></code></a></li>
+<li><a class="reference internal" href="#ding.worker.coordinator.resource_manager.NaiveResourceManager.update"><code class="docutils literal notranslate"><span class="pre">NaiveResourceManager.update()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -426,9 +417,8 @@
   <script type="text/javascript" id="documentation_options" data-url_root="../../../"
     src="../../../_static/documentation_options.js"></script>
   <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-  <script src="../../../_static/jquery.js"></script>
-  <script src="../../../_static/underscore.js"></script>
   <script src="../../../_static/doctools.js"></script>
+  <script src="../../../_static/sphinx_highlight.js"></script>
   
 
   

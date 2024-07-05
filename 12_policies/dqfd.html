@@ -9,7 +9,7 @@
 
 <head>
   <meta charset="utf-8">
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
@@ -36,7 +36,7 @@
   <link rel="index" title="Index" href="../genindex.html" />
   <link rel="search" title="Search" href="../search.html" />
   <link rel="next" title="SQIL" href="sqil.html" />
-  <link rel="prev" title="MCTS" href="mcts.html" />
+  <link rel="prev" title="ICM" href="icm.html" />
     <link href="../_static/css/style.css" rel="stylesheet" type="text/css">
 
 
@@ -299,16 +299,16 @@
               <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
                 
   <section id="dqfd">
-<h1>DQfD<a class="headerlink" href="#dqfd" title="Permalink to this headline">¶</a></h1>
+<h1>DQfD<a class="headerlink" href="#dqfd" title="Permalink to this heading">¶</a></h1>
 <section id="overview">
-<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading">¶</a></h2>
 <p>DQfD was proposed in <a class="reference external" href="https://arxiv.org/abs/1704.03732">Deep Q-learning from Demonstrations</a> by DeepMind, which appeared at AAAI 2018.
 It ﬁrst pretrains solely on demonstration data, using a combination of 1-step TD, n-step TD, supervised, and regularization losses so that it has a reasonable policy that is a good starting point for learning in the task. Once it starts interacting with the task, it continues learning by sampling from both its selfgenerated data as well as the demonstration data.
 The ratio of both types of data in each mini-batch is automatically controlled by a prioritized-replay mechanism.</p>
 <p>DQfD leverages small sets of demonstration data to massively accelerate the learning process and performs better than PDD DQN, RBS, HER and ADET on Atari games.</p>
 </section>
 <section id="quick-facts">
-<h2>Quick Facts<a class="headerlink" href="#quick-facts" title="Permalink to this headline">¶</a></h2>
+<h2>Quick Facts<a class="headerlink" href="#quick-facts" title="Permalink to this heading">¶</a></h2>
 <ol class="arabic simple">
 <li><p>DQfD is an extension algorithm of DQN.</p></li>
 <li><p>Store the demonstrations into an expert replay buffer.</p></li>
@@ -318,7 +318,7 @@ The ratio of both types of data in each mini-batch is automatically controlled b
 </ol>
 </section>
 <section id="key-equations-or-key-graphs">
-<h2>Key Equations or Key Graphs<a class="headerlink" href="#key-equations-or-key-graphs" title="Permalink to this headline">¶</a></h2>
+<h2>Key Equations or Key Graphs<a class="headerlink" href="#key-equations-or-key-graphs" title="Permalink to this heading">¶</a></h2>
 <p>The DQfD overall loss used to update the network is a combination of all four losses.</p>
 <p>Overall Loss:  <span class="math notranslate nohighlight">\(J(Q) = J_{DQ}(Q) + \lambda_1 J_n(Q) + \lambda_2J_E(Q) + \lambda_3 J_{L2}(Q)\)</span></p>
 <ul class="simple">
@@ -329,7 +329,7 @@ The ratio of both types of data in each mini-batch is automatically controlled b
 </ul>
 </section>
 <section id="pseudo-code">
-<h2>Pseudo-code<a class="headerlink" href="#pseudo-code" title="Permalink to this headline">¶</a></h2>
+<h2>Pseudo-code<a class="headerlink" href="#pseudo-code" title="Permalink to this heading">¶</a></h2>
 <a class="reference internal image-reference" href="../_images/DQfD.png"><img alt="../_images/DQfD.png" class="align-center" src="../_images/DQfD.png" style="width: 613.0px; height: 713.0px;" /></a>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -344,7 +344,7 @@ The ratio of both types of data in each mini-batch is automatically controlled b
 </div></blockquote>
 </section>
 <section id="extensions">
-<h2>Extensions<a class="headerlink" href="#extensions" title="Permalink to this headline">¶</a></h2>
+<h2>Extensions<a class="headerlink" href="#extensions" title="Permalink to this heading">¶</a></h2>
 <p>DeepMind has extended DQfD in several ways. Upon a literature search, it seems like two relevant follow-up works are:</p>
 <ul>
 <li><p><a class="reference external" href="https://arxiv.org/abs/1803.00933">Distributed Prioritized Experience Replay</a></p>
@@ -360,24 +360,16 @@ The ratio of both types of data in each mini-batch is automatically controlled b
 </ul>
 </section>
 <section id="implementations">
-<h2>Implementations<a class="headerlink" href="#implementations" title="Permalink to this headline">¶</a></h2>
+<h2>Implementations<a class="headerlink" href="#implementations" title="Permalink to this heading">¶</a></h2>
 <p>The DI-engine implements <a class="reference external" href="https://github.com/opendilab/DI-engine/blob/main/ding/policy/dqfd.py">DQfD</a>.</p>
 <p>The default config of DQfD Policy is defined as follows:</p>
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">ding.policy.dqfd.</span></span><span class="sig-name descname"><span class="pre">DQFDPolicy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">type</span><span class="p"><span class="pre">,</span> </span><span class="pre">torch.nn.modules.module.Module</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_field</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ding/policy/dqfd.html#DQFDPolicy"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ding.policy.dqfd.</span></span><span class="sig-name descname"><span class="pre">DQFDPolicy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cfg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">EasyDict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Module</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_field</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ding/policy/dqfd.html#DQFDPolicy"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><dl>
 <dt>Overview:</dt><dd><p>Policy class of DQFD algorithm, extended by Double DQN/Dueling DQN/PER/multi-step TD.</p>
 </dd>
 <dt>Config:</dt><dd><table class="docutils align-default">
-<colgroup>
-<col style="width: 2%" />
-<col style="width: 19%" />
-<col style="width: 7%" />
-<col style="width: 13%" />
-<col style="width: 37%" />
-<col style="width: 21%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>ID</p></th>
 <th class="head"><p>Symbol</p></th>
@@ -684,22 +676,34 @@ The ratio of both types of data in each mini-batch is automatically controlled b
 <p>The network interface DQfD used is defined as follows:</p>
 <dl class="py class">
 <dt class="sig sig-object py">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">ding.model.template.q_learning.</span></span><span class="sig-name descname"><span class="pre">DQN</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs_shape</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">ding.utils.type_helper.SequenceType</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_shape</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">ding.utils.type_helper.SequenceType</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoder_hidden_size_list</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">ding.utils.type_helper.SequenceType</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">[128,</span> <span class="pre">128,</span> <span class="pre">64]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dueling</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">head_hidden_size</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">head_layer_num</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activation</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.nn.modules.module.Module</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">ReLU()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_type</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ding/model/template/q_learning.html#DQN"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
-<dd><dl class="py method">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs_shape</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">ding.utils.type_helper.SequenceType</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_shape</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">ding.utils.type_helper.SequenceType</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoder_hidden_size_list</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">ding.utils.type_helper.SequenceType</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">[128,</span> <span class="pre">128,</span> <span class="pre">64]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dueling</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">head_hidden_size</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">head_layer_num</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activation</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.nn.modules.module.Module</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">ReLU()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_type</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/ding/model/template/q_learning.html#DQN.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ding.model.template.q_learning.</span></span><span class="sig-name descname"><span class="pre">DQN</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs_shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">SequenceType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">SequenceType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoder_hidden_size_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SequenceType</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[128,</span> <span class="pre">128,</span> <span class="pre">64]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dueling</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">head_hidden_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">head_layer_num</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Module</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">ReLU()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dropout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_bias</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ding/model/template/q_learning.html#DQN"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><dl class="simple">
-<dt>Overview:</dt><dd><p>Init the DQN (encoder + head) Model according to input arguments.</p>
+<dt>Overview:</dt><dd><p>The neural nework structure and computation graph of Deep Q Network (DQN) algorithm, which is the most classic         value-based RL algorithm for discrete action. The DQN is composed of two parts: <code class="docutils literal notranslate"><span class="pre">encoder</span></code> and <code class="docutils literal notranslate"><span class="pre">head</span></code>.         The <code class="docutils literal notranslate"><span class="pre">encoder</span></code> is used to extract the feature from various observation, and the <code class="docutils literal notranslate"><span class="pre">head</span></code> is used to compute         the Q value of each action dimension.</p>
+</dd>
+<dt>Interfaces:</dt><dd><p><code class="docutils literal notranslate"><span class="pre">__init__</span></code>, <code class="docutils literal notranslate"><span class="pre">forward</span></code>.</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Current <code class="docutils literal notranslate"><span class="pre">DQN</span></code> supports two types of encoder: <code class="docutils literal notranslate"><span class="pre">FCEncoder</span></code> and <code class="docutils literal notranslate"><span class="pre">ConvEncoder</span></code>, two types of head:         <code class="docutils literal notranslate"><span class="pre">DiscreteHead</span></code> and <code class="docutils literal notranslate"><span class="pre">DuelingHead</span></code>. You can customize your own encoder or head by inheriting this class.</p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obs_shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">SequenceType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action_shape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">SequenceType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoder_hidden_size_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">SequenceType</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[128,</span> <span class="pre">128,</span> <span class="pre">64]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dueling</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">head_hidden_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">head_layer_num</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Module</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">ReLU()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dropout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init_bias</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/ding/model/template/q_learning.html#DQN.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>Overview:</dt><dd><p>initialize the DQN (encoder + head) Model according to corresponding input arguments.</p>
 </dd>
 <dt>Arguments:</dt><dd><ul class="simple">
 <li><p>obs_shape (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Union[int,</span> <span class="pre">SequenceType]</span></code>): Observation space shape, such as 8 or [4, 84, 84].</p></li>
 <li><p>action_shape (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Union[int,</span> <span class="pre">SequenceType]</span></code>): Action space shape, such as 6 or [2, 3, 3].</p></li>
 <li><p>encoder_hidden_size_list (<code class="xref py py-obj docutils literal notranslate"><span class="pre">SequenceType</span></code>): Collection of <code class="docutils literal notranslate"><span class="pre">hidden_size</span></code> to pass to <code class="docutils literal notranslate"><span class="pre">Encoder</span></code>,                 the last element must match <code class="docutils literal notranslate"><span class="pre">head_hidden_size</span></code>.</p></li>
-<li><p>dueling (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Optional[bool]</span></code>): Whether choose <code class="docutils literal notranslate"><span class="pre">DuelingHead</span></code> or <code class="docutils literal notranslate"><span class="pre">DiscreteHead(default)</span></code>.</p></li>
-<li><p>head_hidden_size (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Optional[int]</span></code>): The <code class="docutils literal notranslate"><span class="pre">hidden_size</span></code> of head network.</p></li>
-<li><p>head_layer_num (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>): The number of layers used in the head network to compute Q value output</p></li>
-<li><p>activation (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Optional[nn.Module]</span></code>): The type of activation function in networks                 if <code class="docutils literal notranslate"><span class="pre">None</span></code> then default set it to <code class="docutils literal notranslate"><span class="pre">nn.ReLU()</span></code></p></li>
+<li><p>dueling (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Optional[bool]</span></code>): Whether choose <code class="docutils literal notranslate"><span class="pre">DuelingHead</span></code> or <code class="docutils literal notranslate"><span class="pre">DiscreteHead</span> <span class="pre">(default)</span></code>.</p></li>
+<li><p>head_hidden_size (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Optional[int]</span></code>): The <code class="docutils literal notranslate"><span class="pre">hidden_size</span></code> of head network, defaults to None,                 then it will be set to the last element of <code class="docutils literal notranslate"><span class="pre">encoder_hidden_size_list</span></code>.</p></li>
+<li><p>head_layer_num (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>): The number of layers used in the head network to compute Q value output.</p></li>
+<li><p>activation (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Optional[nn.Module]</span></code>): The type of activation function in networks                 if <code class="docutils literal notranslate"><span class="pre">None</span></code> then default set it to <code class="docutils literal notranslate"><span class="pre">nn.ReLU()</span></code>.</p></li>
 <li><p>norm_type (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Optional[str]</span></code>): The type of normalization in networks, see                 <code class="docutils literal notranslate"><span class="pre">ding.torch_utils.fc_block</span></code> for more details. you can choose one of [‘BN’, ‘IN’, ‘SyncBN’, ‘LN’]</p></li>
+<li><p>dropout (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Optional[float]</span></code>): The dropout rate of the dropout layer.                 if <code class="docutils literal notranslate"><span class="pre">None</span></code> then default disable dropout layer.</p></li>
+<li><p>init_bias (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Optional[float]</span></code>): The initial value of the last layer bias in the head network.</p></li>
 </ul>
 </dd>
 </dl>
@@ -707,25 +711,25 @@ The ratio of both types of data in each mini-batch is automatically controlled b
 
 <dl class="py method">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span></span></span><a class="reference internal" href="../_modules/ding/model/template/q_learning.html#DQN.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span></span></span><a class="reference internal" href="../_modules/ding/model/template/q_learning.html#DQN.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><dl>
 <dt>Overview:</dt><dd><p>DQN forward computation graph, input observation tensor to predict q_value.</p>
 </dd>
 <dt>Arguments:</dt><dd><ul class="simple">
-<li><p>x (<code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.Tensor</span></code>): Observation inputs</p></li>
+<li><p>x (<code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.Tensor</span></code>): The input observation tensor data.</p></li>
 </ul>
 </dd>
 <dt>Returns:</dt><dd><ul class="simple">
-<li><p>outputs (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Dict</span></code>): DQN forward outputs, such as q_value.</p></li>
+<li><p>outputs (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Dict</span></code>): The output of DQN’s forward, including q_value.</p></li>
 </ul>
 </dd>
 <dt>ReturnsKeys:</dt><dd><ul class="simple">
-<li><p>logit (<code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.Tensor</span></code>): Discrete Q-value output of each action dimension.</p></li>
+<li><p>logit (<code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.Tensor</span></code>): Discrete Q-value output of each possible action dimension.</p></li>
 </ul>
 </dd>
 <dt>Shapes:</dt><dd><ul class="simple">
 <li><p>x (<code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.Tensor</span></code>): <span class="math notranslate nohighlight">\((B, N)\)</span>, where B is batch size and N is <code class="docutils literal notranslate"><span class="pre">obs_shape</span></code></p></li>
-<li><p>logit (<code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.FloatTensor</span></code>): <span class="math notranslate nohighlight">\((B, M)\)</span>, where B is batch size and M is <code class="docutils literal notranslate"><span class="pre">action_shape</span></code></p></li>
+<li><p>logit (<code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.Tensor</span></code>): <span class="math notranslate nohighlight">\((B, M)\)</span>, where B is batch size and M is <code class="docutils literal notranslate"><span class="pre">action_shape</span></code></p></li>
 </ul>
 </dd>
 <dt>Examples:</dt><dd><div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">DQN</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>  <span class="c1"># arguments: &#39;obs_shape&#39; and &#39;action_shape&#39;</span>
@@ -736,21 +740,18 @@ The ratio of both types of data in each mini-batch is automatically controlled b
 </div>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For consistency and compatibility, we name all the outputs of the network which are related to action             selections as <code class="docutils literal notranslate"><span class="pre">logit</span></code>.</p>
+</div>
 </dd></dl>
 
 </dd></dl>
 
 </section>
 <section id="benchmark">
-<h2>Benchmark<a class="headerlink" href="#benchmark" title="Permalink to this headline">¶</a></h2>
+<h2>Benchmark<a class="headerlink" href="#benchmark" title="Permalink to this heading">¶</a></h2>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 15%" />
-<col style="width: 12%" />
-<col style="width: 38%" />
-<col style="width: 19%" />
-<col style="width: 16%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>environment</p></th>
 <th class="head"><p>best mean reward</p></th>
@@ -789,7 +790,7 @@ skip-v4)</p></td>
 </table>
 </section>
 <section id="reference">
-<h2>Reference<a class="headerlink" href="#reference" title="Permalink to this headline">¶</a></h2>
+<h2>Reference<a class="headerlink" href="#reference" title="Permalink to this heading">¶</a></h2>
 <ul class="simple">
 <li><p>Hester T, Vecerik M, Pietquin O, et al. Deep q-learning from demonstrations[C]//Thirty-second AAAI conference on artificial intelligence. 2018.</p></li>
 <li><p>Blog:  <a class="reference external" href="https://danieltakeshi.github.io/2019/04/30/il-and-rl/">Combining Imitation Learning and Reinforcement Learning Using DQfD</a></p></li>
@@ -810,7 +811,7 @@ skip-v4)</p></td>
         class="next-page"></a>
     
     
-    <a href="mcts.html" class="btn btn-neutral" title="MCTS" accesskey="p"
+    <a href="icm.html" class="btn btn-neutral" title="ICM" accesskey="p"
       rel="prev"><img src="../_static/images/chevron-right-blue.svg" class="previous-page"> Previous</a>
     
   </div>
@@ -868,9 +869,8 @@ skip-v4)</p></td>
   <script type="text/javascript" id="documentation_options" data-url_root="../"
     src="../_static/documentation_options.js"></script>
   <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-  <script src="../_static/jquery.js"></script>
-  <script src="../_static/underscore.js"></script>
   <script src="../_static/doctools.js"></script>
+  <script src="../_static/sphinx_highlight.js"></script>
   <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   
 

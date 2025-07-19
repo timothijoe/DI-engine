@@ -99,6 +99,16 @@
                   <p>OpenDILab Decision AI Engine</p>
                 </a>
                 <a class="doc-dropdown-option nav-dropdown-item"
+                  href="https://github.com/opendilab/LightZero" target="_blank">
+                  <span class="dropdown-title">LightZero </span>
+                  <p>OpenDILab Decision Monte Carlo Tree Search Framework</p>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item"
+                  href="https://github.com/opendilab/GenerativeRL" target="_blank">
+                  <span class="dropdown-title">GenerativeRL </span>
+                  <p>OpenDILab Generative AI Framework</p>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item"
                   href="https://github.com/opendilab/DI-star" target="_blank">
                   <span class="dropdown-title">DI-star </span>
                   <p>OpenDILab Decision AI in StarCraftII</p>
@@ -292,23 +302,23 @@
               <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
                 
   <h1>Source code for ding.worker.learner.base_learner</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
-<span class="kn">from</span> <span class="nn">ditk</span> <span class="kn">import</span> <span class="n">logging</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">namedtuple</span>
-<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
-<span class="kn">from</span> <span class="nn">easydict</span> <span class="kn">import</span> <span class="n">EasyDict</span>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ditk</span><span class="w"> </span><span class="kn">import</span> <span class="n">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">namedtuple</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">easydict</span><span class="w"> </span><span class="kn">import</span> <span class="n">EasyDict</span>
 
-<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
 
-<span class="kn">from</span> <span class="nn">ding.torch_utils</span> <span class="kn">import</span> <span class="n">CountVar</span><span class="p">,</span> <span class="n">auto_checkpoint</span><span class="p">,</span> <span class="n">build_log_buffer</span>
-<span class="kn">from</span> <span class="nn">ding.utils</span> <span class="kn">import</span> <span class="n">build_logger</span><span class="p">,</span> <span class="n">EasyTimer</span><span class="p">,</span> <span class="n">import_module</span><span class="p">,</span> <span class="n">LEARNER_REGISTRY</span><span class="p">,</span> <span class="n">get_rank</span><span class="p">,</span> <span class="n">get_world_size</span>
-<span class="kn">from</span> <span class="nn">ding.utils.autolog</span> <span class="kn">import</span> <span class="n">LoggedValue</span><span class="p">,</span> <span class="n">LoggedModel</span><span class="p">,</span> <span class="n">TickTime</span>
-<span class="kn">from</span> <span class="nn">ding.utils.data</span> <span class="kn">import</span> <span class="n">AsyncDataLoader</span>
-<span class="kn">from</span> <span class="nn">.learner_hook</span> <span class="kn">import</span> <span class="n">build_learner_hook_by_cfg</span><span class="p">,</span> <span class="n">add_learner_hook</span><span class="p">,</span> <span class="n">merge_hooks</span><span class="p">,</span> <span class="n">LearnerHook</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ding.torch_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">CountVar</span><span class="p">,</span> <span class="n">auto_checkpoint</span><span class="p">,</span> <span class="n">build_log_buffer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ding.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_logger</span><span class="p">,</span> <span class="n">EasyTimer</span><span class="p">,</span> <span class="n">import_module</span><span class="p">,</span> <span class="n">LEARNER_REGISTRY</span><span class="p">,</span> <span class="n">get_rank</span><span class="p">,</span> <span class="n">get_world_size</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ding.utils.autolog</span><span class="w"> </span><span class="kn">import</span> <span class="n">LoggedValue</span><span class="p">,</span> <span class="n">LoggedModel</span><span class="p">,</span> <span class="n">TickTime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ding.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncDataLoader</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.learner_hook</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_learner_hook_by_cfg</span><span class="p">,</span> <span class="n">add_learner_hook</span><span class="p">,</span> <span class="n">merge_hooks</span><span class="p">,</span> <span class="n">LearnerHook</span>
 
 
 <div class="viewcode-block" id="BaseLearner"><a class="viewcode-back" href="../../../../05_api_doc/worker/learner/learner.html#ding.worker.learner.base_learner.BaseLearner">[docs]</a><span class="nd">@LEARNER_REGISTRY</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s1">&#39;base&#39;</span><span class="p">)</span>
-<span class="k">class</span> <span class="nc">BaseLearner</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">BaseLearner</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Overview:</span>
 <span class="sd">        Base class for policy learning.</span>
@@ -320,7 +330,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">default_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EasyDict</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">default_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EasyDict</span><span class="p">:</span>
         <span class="n">cfg</span> <span class="o">=</span> <span class="n">EasyDict</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">config</span><span class="p">))</span>
         <span class="n">cfg</span><span class="o">.</span><span class="n">cfg_type</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s1">&#39;Dict&#39;</span>
         <span class="k">return</span> <span class="n">cfg</span>
@@ -329,6 +339,8 @@
         <span class="n">train_iterations</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="mf">1e9</span><span class="p">),</span>
         <span class="n">dataloader</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">num_workers</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="p">),</span>
         <span class="n">log_policy</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">is_multitask_pipeline</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">only_monitor_rank0</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="c1"># --- Hooks ---</span>
         <span class="n">hook</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
             <span class="n">load_ckpt_before_run</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
@@ -340,7 +352,7 @@
 
     <span class="n">_name</span> <span class="o">=</span> <span class="s2">&quot;BaseLearner&quot;</span>  <span class="c1"># override this variable for sub-class learner</span>
 
-<div class="viewcode-block" id="BaseLearner.__init__"><a class="viewcode-back" href="../../../../05_api_doc/worker/learner/learner.html#ding.worker.learner.base_learner.BaseLearner.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="BaseLearner.__init__"><a class="viewcode-back" href="../../../../05_api_doc/worker/learner/learner.html#ding.worker.learner.base_learner.BaseLearner.__init__">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
             <span class="n">cfg</span><span class="p">:</span> <span class="n">EasyDict</span><span class="p">,</span>
             <span class="n">policy</span><span class="p">:</span> <span class="n">namedtuple</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -353,7 +365,9 @@
 <span class="sd">        Overview:</span>
 <span class="sd">            Initialization method, build common learner components according to cfg, such as hook, wrapper and so on.</span>
 <span class="sd">        Arguments:</span>
-<span class="sd">            - cfg (:obj:`EasyDict`): Learner config, you can refer cls.config for details.</span>
+<span class="sd">            - cfg (:obj:`EasyDict`): Learner config, you can refer cls.config for details. It should include \</span>
+<span class="sd">                `is_multitask_pipeline` to indicate if the pipeline is multitask, default is False, \</span>
+<span class="sd">                and `only_monitor_rank0` to control whether only rank 0 needs monitor and tb_logger, default is True.</span>
 <span class="sd">            - policy (:obj:`namedtuple`): A collection of policy function of learn mode. And policy can also be \</span>
 <span class="sd">                initialized when runtime.</span>
 <span class="sd">            - tb_logger (:obj:`SummaryWriter`): Tensorboard summary writer.</span>
@@ -372,6 +386,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_instance_name</span> <span class="o">=</span> <span class="n">instance_name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ckpt_name</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_timer</span> <span class="o">=</span> <span class="n">EasyTimer</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_multitask_pipeline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="o">.</span><span class="n">is_multitask_pipeline</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">only_monitor_rank0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="o">.</span><span class="n">only_monitor_rank0</span>
+
+        <span class="c1"># Adjust only_monitor_rank0 based on is_multitask_pipeline</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_multitask_pipeline</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">only_monitor_rank0</span> <span class="o">=</span> <span class="kc">False</span>
 
         <span class="c1"># These 2 attributes are only used in parallel mode.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_end_flag</span> <span class="o">=</span> <span class="kc">False</span>
@@ -386,8 +406,10 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="o">.</span><span class="n">hook</span><span class="o">.</span><span class="n">log_reduce_after_iter</span> <span class="o">=</span> <span class="kc">True</span>
 
         <span class="c1"># Logger (Monitor will be initialized in policy setter)</span>
-        <span class="c1"># Only rank == 0 learner needs monitor and tb_logger, others only need text_logger to display terminal output.</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="c1"># In the multitask pipeline, each rank needs its own tb_logger.</span>
+        <span class="c1"># Otherwise, only rank == 0 learner needs monitor and tb_logger,</span>
+        <span class="c1"># others only need text_logger to display terminal output.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rank</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">only_monitor_rank0</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">tb_logger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">build_logger</span><span class="p">(</span>
                     <span class="s1">&#39;./</span><span class="si">{}</span><span class="s1">/log/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_exp_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_instance_name</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_instance_name</span><span class="p">,</span> <span class="n">need_tb</span><span class="o">=</span><span class="kc">False</span>
@@ -402,6 +424,7 @@
                 <span class="s1">&#39;./</span><span class="si">{}</span><span class="s1">/log/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_exp_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_instance_name</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_instance_name</span><span class="p">,</span> <span class="n">need_tb</span><span class="o">=</span><span class="kc">False</span>
             <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_tb_logger</span> <span class="o">=</span> <span class="kc">None</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">_log_buffer</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s1">&#39;scalar&#39;</span><span class="p">:</span> <span class="n">build_log_buffer</span><span class="p">(),</span>
             <span class="s1">&#39;scalars&#39;</span><span class="p">:</span> <span class="n">build_log_buffer</span><span class="p">(),</span>
@@ -416,12 +439,14 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_hooks</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;before_run&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;before_iter&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;after_iter&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;after_run&#39;</span><span class="p">:</span> <span class="p">[]}</span>
         <span class="c1"># Last iteration. Used to record current iter.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_last_iter</span> <span class="o">=</span> <span class="n">CountVar</span><span class="p">(</span><span class="n">init_val</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c1"># Collector envstep. Used to record current envstep.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_collector_envstep</span> <span class="o">=</span> <span class="mi">0</span>
 
         <span class="c1"># Setup time wrapper and hook.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_setup_wrapper</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_setup_hook</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="BaseLearner._setup_hook"><a class="viewcode-back" href="../../../../05_api_doc/worker/learner/learner.html#ding.worker.learner.base_learner.BaseLearner._setup_hook">[docs]</a>    <span class="k">def</span> <span class="nf">_setup_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="BaseLearner._setup_hook"><a class="viewcode-back" href="../../../../05_api_doc/worker/learner/learner.html#ding.worker.learner.base_learner.BaseLearner._setup_hook">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">_setup_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Overview:</span>
 <span class="sd">            Setup hook for base_learner. Hook is the way to implement some functions at specific time point</span>
@@ -432,7 +457,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_hooks</span> <span class="o">=</span> <span class="n">build_learner_hook_by_cfg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="o">.</span><span class="n">hook</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="BaseLearner._setup_wrapper"><a class="viewcode-back" href="../../../../05_api_doc/worker/learner/learner.html#ding.worker.learner.base_learner.BaseLearner._setup_wrapper">[docs]</a>    <span class="k">def</span> <span class="nf">_setup_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="BaseLearner._setup_wrapper"><a class="viewcode-back" href="../../../../05_api_doc/worker/learner/learner.html#ding.worker.learner.base_learner.BaseLearner._setup_wrapper">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">_setup_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Overview:</span>
 <span class="sd">            Use ``_time_wrapper`` to get ``train_time``.</span>
@@ -442,7 +467,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_wrapper_timer</span> <span class="o">=</span> <span class="n">EasyTimer</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">train</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train</span><span class="p">,</span> <span class="s1">&#39;scalar&#39;</span><span class="p">,</span> <span class="s1">&#39;train_time&#39;</span><span class="p">)</span></div>
 
-    <span class="k">def</span> <span class="nf">_time_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">var_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">var_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_time_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">var_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">var_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Overview:</span>
 <span class="sd">            Wrap a function and record the time it used in ``_log_buffer``.</span>
@@ -454,7 +479,7 @@
 <span class="sd">             - wrapper (:obj:`Callable`): The wrapper to acquire a function&#39;s time.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
             <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wrapper_timer</span><span class="p">:</span>
                 <span class="n">ret</span> <span class="o">=</span> <span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_log_buffer</span><span class="p">[</span><span class="n">var_type</span><span class="p">][</span><span class="n">var_name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wrapper_timer</span><span class="o">.</span><span class="n">value</span>
@@ -462,7 +487,7 @@
 
         <span class="k">return</span> <span class="n">wrapper</span>
 
-<div class="viewcode-block" id="BaseLearner.register_hook"><a class="viewcode-back" href="../../../../05_api_doc/worker/learner/learner.html#ding.worker.learner.base_learner.BaseLearner.register_hook">[docs]</a>    <span class="k">def</span> <span class="nf">register_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hook</span><span class="p">:</span> <span class="n">LearnerHook</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="BaseLearner.register_hook"><a class="viewcode-back" href="../../../../05_api_doc/worker/learner/learner.html#ding.worker.learner.base_learner.BaseLearner.register_hook">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">register_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hook</span><span class="p">:</span> <span class="n">LearnerHook</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Overview:</span>
 <span class="sd">            Add a new learner hook.</span>
@@ -471,7 +496,27 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">add_learner_hook</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_hooks</span><span class="p">,</span> <span class="n">hook</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="BaseLearner.train"><a class="viewcode-back" href="../../../../05_api_doc/worker/learner/learner.html#ding.worker.learner.base_learner.BaseLearner.train">[docs]</a>    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">envstep</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">policy_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">collector_envstep</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Overview:</span>
+<span class="sd">            Get current collector envstep.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            - collector_envstep (:obj:`int`): Current collector envstep.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collector_envstep</span>
+
+    <span class="nd">@collector_envstep</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">collector_envstep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Overview:</span>
+<span class="sd">            Set current collector envstep.</span>
+<span class="sd">        Arguments:</span>
+<span class="sd">            - value (:obj:`int`): Current collector envstep.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_collector_envstep</span> <span class="o">=</span> <span class="n">value</span>
+
+<div class="viewcode-block" id="BaseLearner.train"><a class="viewcode-back" href="../../../../05_api_doc/worker/learner/learner.html#ding.worker.learner.base_learner.BaseLearner.train">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">envstep</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">policy_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Overview:</span>
 <span class="sd">            Given training data, implement network update for one iteration and update related variables.</span>
@@ -538,7 +583,7 @@
         <span class="k">return</span> <span class="n">log_vars</span></div>
 
     <span class="nd">@auto_checkpoint</span>
-    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Overview:</span>
 <span class="sd">            [Only Used In Parallel Mode] Learner&#39;s API for parallel entry.</span>
@@ -563,7 +608,7 @@
         <span class="c1"># after run hook</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">call_hook</span><span class="p">(</span><span class="s1">&#39;after_run&#39;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="BaseLearner.setup_dataloader"><a class="viewcode-back" href="../../../../05_api_doc/worker/learner/learner.html#ding.worker.learner.base_learner.BaseLearner.setup_dataloader">[docs]</a>    <span class="k">def</span> <span class="nf">setup_dataloader</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="BaseLearner.setup_dataloader"><a class="viewcode-back" href="../../../../05_api_doc/worker/learner/learner.html#ding.worker.learner.base_learner.BaseLearner.setup_dataloader">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">setup_dataloader</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Overview:</span>
 <span class="sd">            [Only Used In Parallel Mode] Setup learner&#39;s dataloader.</span>
@@ -585,7 +630,7 @@
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_next_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_next_data</span><span class="p">,</span> <span class="s1">&#39;scalar&#39;</span><span class="p">,</span> <span class="s1">&#39;data_time&#39;</span><span class="p">)</span></div>
 
-    <span class="k">def</span> <span class="nf">_next_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_next_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Overview:</span>
 <span class="sd">            [Only Used In Parallel Mode] Call ``_dataloader``&#39;s ``__next__`` method to return next training data.</span>
@@ -594,7 +639,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dataloader</span><span class="p">)</span>
 
-<div class="viewcode-block" id="BaseLearner.close"><a class="viewcode-back" href="../../../../05_api_doc/worker/learner/learner.html#ding.worker.learner.base_learner.BaseLearner.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="BaseLearner.close"><a class="viewcode-back" href="../../../../05_api_doc/worker/learner/learner.html#ding.worker.learner.base_learner.BaseLearner.close">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Overview:</span>
 <span class="sd">            [Only Used In Parallel Mode] Close the related resources, e.g. dataloader, tensorboard logger, etc.</span>
@@ -608,10 +653,10 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_tb_logger</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_tb_logger</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
-    <span class="k">def</span> <span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
-<div class="viewcode-block" id="BaseLearner.call_hook"><a class="viewcode-back" href="../../../../05_api_doc/worker/learner/learner.html#ding.worker.learner.base_learner.BaseLearner.call_hook">[docs]</a>    <span class="k">def</span> <span class="nf">call_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="BaseLearner.call_hook"><a class="viewcode-back" href="../../../../05_api_doc/worker/learner/learner.html#ding.worker.learner.base_learner.BaseLearner.call_hook">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">call_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Overview:</span>
 <span class="sd">            Call the corresponding hook plugins according to position name.</span>
@@ -622,7 +667,7 @@
         <span class="k">for</span> <span class="n">hook</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hooks</span><span class="p">[</span><span class="n">name</span><span class="p">]:</span>
             <span class="n">hook</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
 
-    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Overview:</span>
 <span class="sd">            Log string info by ``self._logger.info``.</span>
@@ -631,10 +676,10 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;[RANK</span><span class="si">{}</span><span class="s1">]: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rank</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;[RANK</span><span class="si">{}</span><span class="s1">]: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_rank</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>
 
-<div class="viewcode-block" id="BaseLearner.save_checkpoint"><a class="viewcode-back" href="../../../../05_api_doc/worker/learner/learner.html#ding.worker.learner.base_learner.BaseLearner.save_checkpoint">[docs]</a>    <span class="k">def</span> <span class="nf">save_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ckpt_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="BaseLearner.save_checkpoint"><a class="viewcode-back" href="../../../../05_api_doc/worker/learner/learner.html#ding.worker.learner.base_learner.BaseLearner.save_checkpoint">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">save_checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ckpt_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Overview:</span>
 <span class="sd">            Directly call ``save_ckpt_after_run`` hook to save checkpoint.</span>
@@ -656,7 +701,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">ckpt_name</span> <span class="o">=</span> <span class="kc">None</span></div>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">learn_info</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">learn_info</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Overview:</span>
 <span class="sd">            Get current info dict, which will be sent to commander, e.g. replay buffer priority update,</span>
@@ -672,85 +717,85 @@
         <span class="k">return</span> <span class="n">ret</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">last_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CountVar</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">last_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CountVar</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_iter</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">train_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">train_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_iter</span><span class="o">.</span><span class="n">val</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">monitor</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TickMonitor&#39;</span><span class="p">:</span>  <span class="c1"># noqa</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">monitor</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TickMonitor&#39;</span><span class="p">:</span>  <span class="c1"># noqa</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">log_buffer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>  <span class="c1"># LogDict</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_buffer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>  <span class="c1"># LogDict</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log_buffer</span>
 
     <span class="nd">@log_buffer</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">log_buffer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_log_buffer</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_buffer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_log_buffer</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_log_buffer</span> <span class="o">=</span> <span class="n">_log_buffer</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logger</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logger</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">tb_logger</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TensorBoradLogger&#39;</span><span class="p">:</span>  <span class="c1"># noqa</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tb_logger</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TensorBoradLogger&#39;</span><span class="p">:</span>  <span class="c1"># noqa</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tb_logger</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">exp_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">exp_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exp_name</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">instance_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">instance_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_instance_name</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">rank</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rank</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rank</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">world_size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">world_size</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_world_size</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">policy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Policy&#39;</span><span class="p">:</span>  <span class="c1"># noqa</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">policy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Policy&#39;</span><span class="p">:</span>  <span class="c1"># noqa</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_policy</span>
 
     <span class="nd">@policy</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">policy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_policy</span><span class="p">:</span> <span class="s1">&#39;Policy&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># noqa</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">policy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_policy</span><span class="p">:</span> <span class="s1">&#39;Policy&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># noqa</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Note:</span>
 <span class="sd">            Policy variable monitor is set alongside with policy, because variables are determined by specific policy.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_policy</span> <span class="o">=</span> <span class="n">_policy</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rank</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">only_monitor_rank0</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_monitor</span> <span class="o">=</span> <span class="n">get_simple_monitor_type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_policy</span><span class="o">.</span><span class="n">monitor_vars</span><span class="p">())(</span><span class="n">TickTime</span><span class="p">(),</span> <span class="n">expire</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cfg</span><span class="o">.</span><span class="n">log_policy</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_policy</span><span class="o">.</span><span class="n">info</span><span class="p">())</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">priority_info</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">priority_info</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_priority_info&#39;</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_priority_info</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_priority_info</span>
 
     <span class="nd">@priority_info</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">priority_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_priority_info</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">priority_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_priority_info</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_priority_info</span> <span class="o">=</span> <span class="n">_priority_info</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">ckpt_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ckpt_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ckpt_name</span>
 
     <span class="nd">@ckpt_name</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">ckpt_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_ckpt_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ckpt_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_ckpt_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ckpt_name</span> <span class="o">=</span> <span class="n">_ckpt_name</span></div>
 
 
-<span class="k">def</span> <span class="nf">create_learner</span><span class="p">(</span><span class="n">cfg</span><span class="p">:</span> <span class="n">EasyDict</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseLearner</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_learner</span><span class="p">(</span><span class="n">cfg</span><span class="p">:</span> <span class="n">EasyDict</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseLearner</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Overview:</span>
 <span class="sd">        Given the key(learner_name), create a new learner instance if in learner_mapping&#39;s values,</span>
@@ -766,7 +811,7 @@
     <span class="k">return</span> <span class="n">LEARNER_REGISTRY</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">cfg</span><span class="o">=</span><span class="n">cfg</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
 
-<span class="k">class</span> <span class="nc">TickMonitor</span><span class="p">(</span><span class="n">LoggedModel</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TickMonitor</span><span class="p">(</span><span class="n">LoggedModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Overview:</span>
 <span class="sd">        TickMonitor is to monitor related info during training.</span>
@@ -786,18 +831,18 @@
     <span class="n">total_sample</span> <span class="o">=</span> <span class="n">LoggedValue</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
     <span class="n">total_duration</span> <span class="o">=</span> <span class="n">LoggedValue</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_</span><span class="p">:</span> <span class="s1">&#39;BaseTime&#39;</span><span class="p">,</span> <span class="n">expire</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]):</span>  <span class="c1"># noqa</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_</span><span class="p">:</span> <span class="s1">&#39;BaseTime&#39;</span><span class="p">,</span> <span class="n">expire</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]):</span>  <span class="c1"># noqa</span>
         <span class="n">LoggedModel</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_</span><span class="p">,</span> <span class="n">expire</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__register</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">__register</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">__register</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
-        <span class="k">def</span> <span class="nf">__avg_func</span><span class="p">(</span><span class="n">prop_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">__avg_func</span><span class="p">(</span><span class="n">prop_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
             <span class="n">records</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">range_values</span><span class="p">[</span><span class="n">prop_name</span><span class="p">]()</span>
             <span class="n">_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">_value</span> <span class="k">for</span> <span class="p">(</span><span class="n">_begin_time</span><span class="p">,</span> <span class="n">_end_time</span><span class="p">),</span> <span class="n">_value</span> <span class="ow">in</span> <span class="n">records</span><span class="p">]</span>
             <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">_list</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">_list</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_list</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
 
-        <span class="k">def</span> <span class="nf">__val_func</span><span class="p">(</span><span class="n">prop_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">__val_func</span><span class="p">(</span><span class="n">prop_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
             <span class="n">records</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">range_values</span><span class="p">[</span><span class="n">prop_name</span><span class="p">]()</span>
             <span class="k">return</span> <span class="n">records</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
 
@@ -806,7 +851,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">register_attribute_value</span><span class="p">(</span><span class="s1">&#39;val&#39;</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">partial</span><span class="p">(</span><span class="n">__val_func</span><span class="p">,</span> <span class="n">prop_name</span><span class="o">=</span><span class="n">k</span><span class="p">))</span>
 
 
-<span class="k">def</span> <span class="nf">get_simple_monitor_type</span><span class="p">(</span><span class="n">properties</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[])</span> <span class="o">-&gt;</span> <span class="n">TickMonitor</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_simple_monitor_type</span><span class="p">(</span><span class="n">properties</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[])</span> <span class="o">-&gt;</span> <span class="n">TickMonitor</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Overview:</span>
 <span class="sd">        Besides basic training variables provided in ``TickMonitor``, many policies have their own customized</span>

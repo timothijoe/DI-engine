@@ -102,6 +102,16 @@
                   <p>OpenDILab Decision AI Engine</p>
                 </a>
                 <a class="doc-dropdown-option nav-dropdown-item"
+                  href="https://github.com/opendilab/LightZero" target="_blank">
+                  <span class="dropdown-title">LightZero </span>
+                  <p>OpenDILab Decision Monte Carlo Tree Search Framework</p>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item"
+                  href="https://github.com/opendilab/GenerativeRL" target="_blank">
+                  <span class="dropdown-title">GenerativeRL </span>
+                  <p>OpenDILab Generative AI Framework</p>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item"
                   href="https://github.com/opendilab/DI-star" target="_blank">
                   <span class="dropdown-title">DI-star </span>
                   <p>OpenDILab Decision AI in StarCraftII</p>
@@ -402,20 +412,21 @@ so off-policy PPO are able to reuse old data very efficiently, but potentially b
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">compute_actor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span></span></span><a class="reference internal" href="../_modules/ding/model/template/vac.html#VAC.compute_actor"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<span class="sig-name descname"><span class="pre">compute_actor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span></span></span><a class="reference internal" href="../_modules/ding/model/template/vac.html#VAC.compute_actor"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><dl>
 <dt>Overview:</dt><dd><p>VAC forward computation graph for actor part, input observation tensor to predict action logit.</p>
 </dd>
 <dt>Arguments:</dt><dd><ul class="simple">
-<li><p>x (<code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.Tensor</span></code>): The input observation tensor data.</p></li>
+<li><p>x (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Union[torch.Tensor,</span> <span class="pre">Dict]</span></code>): The input observation tensor data. If a dictionary is provided,                 it should contain keys ‘observation’ and optionally ‘action_mask’.</p></li>
 </ul>
 </dd>
 <dt>Returns:</dt><dd><ul class="simple">
-<li><p>outputs (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Dict</span></code>): The output dict of VAC’s forward computation graph for actor, including <code class="docutils literal notranslate"><span class="pre">logit</span></code>.</p></li>
+<li><p>outputs (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Dict</span></code>): The output dict of VAC’s forward computation graph for actor, including <code class="docutils literal notranslate"><span class="pre">logit</span></code>                 and optionally <code class="docutils literal notranslate"><span class="pre">action_mask</span></code> if the input is a dictionary.</p></li>
 </ul>
 </dd>
 <dt>ReturnsKeys:</dt><dd><ul class="simple">
 <li><p>logit (<code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.Tensor</span></code>): The predicted action logit tensor, for discrete action space, it will be                 the same dimension real-value ranged tensor of possible action choices, and for continuous action                 space, it will be the mu and sigma of the Gaussian distribution, and the number of mu and sigma is the                 same as the number of continuous actions. Hybrid action space is a kind of combination of discrete                 and continuous action space, so the logit will be a dict with <code class="docutils literal notranslate"><span class="pre">action_type</span></code> and <code class="docutils literal notranslate"><span class="pre">action_args</span></code>.</p></li>
+<li><p>action_mask (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Optional[torch.Tensor]</span></code>): The action mask tensor, included if the input is a                 dictionary containing ‘action_mask’.</p></li>
 </ul>
 </dd>
 <dt>Shapes:</dt><dd><ul class="simple">
@@ -434,21 +445,22 @@ so off-policy PPO are able to reuse old data very efficiently, but potentially b
 
 <dl class="py method">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">compute_actor_critic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span></span></span><a class="reference internal" href="../_modules/ding/model/template/vac.html#VAC.compute_actor_critic"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<span class="sig-name descname"><span class="pre">compute_actor_critic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span></span></span><a class="reference internal" href="../_modules/ding/model/template/vac.html#VAC.compute_actor_critic"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><dl>
 <dt>Overview:</dt><dd><p>VAC forward computation graph for both actor and critic part, input observation tensor to predict action             logit and state value.</p>
 </dd>
 <dt>Arguments:</dt><dd><ul class="simple">
-<li><p>x (<code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.Tensor</span></code>): The input observation tensor data.</p></li>
+<li><p>x (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Union[torch.Tensor,</span> <span class="pre">Dict]</span></code>): The input observation tensor data. If a dictionary is provided,                 it should contain keys ‘observation’ and optionally ‘action_mask’.</p></li>
 </ul>
 </dd>
 <dt>Returns:</dt><dd><ul class="simple">
-<li><p>outputs (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Dict</span></code>): The output dict of VAC’s forward computation graph for both actor and critic,                 including <code class="docutils literal notranslate"><span class="pre">logit</span></code> and <code class="docutils literal notranslate"><span class="pre">value</span></code>.</p></li>
+<li><p>outputs (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Dict</span></code>): The output dict of VAC’s forward computation graph for both actor and critic,                 including <code class="docutils literal notranslate"><span class="pre">logit</span></code>, <code class="docutils literal notranslate"><span class="pre">value</span></code>, and optionally <code class="docutils literal notranslate"><span class="pre">action_mask</span></code> if the input is a dictionary.</p></li>
 </ul>
 </dd>
 <dt>ReturnsKeys:</dt><dd><ul class="simple">
 <li><p>logit (<code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.Tensor</span></code>): The predicted action logit tensor, for discrete action space, it will be                 the same dimension real-value ranged tensor of possible action choices, and for continuous action                 space, it will be the mu and sigma of the Gaussian distribution, and the number of mu and sigma is the                 same as the number of continuous actions. Hybrid action space is a kind of combination of discrete                 and continuous action space, so the logit will be a dict with <code class="docutils literal notranslate"><span class="pre">action_type</span></code> and <code class="docutils literal notranslate"><span class="pre">action_args</span></code>.</p></li>
 <li><p>value (<code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.Tensor</span></code>): The predicted state value tensor.</p></li>
+<li><p>action_mask (<code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.Tensor</span></code>, optional): The action mask tensor, included if the input is a                 dictionary containing ‘action_mask’.</p></li>
 </ul>
 </dd>
 <dt>Shapes:</dt><dd><ul class="simple">
@@ -473,12 +485,12 @@ so off-policy PPO are able to reuse old data very efficiently, but potentially b
 
 <dl class="py method">
 <dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">compute_critic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span></span></span><a class="reference internal" href="../_modules/ding/model/template/vac.html#VAC.compute_critic"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<span class="sig-name descname"><span class="pre">compute_critic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span></span></span><a class="reference internal" href="../_modules/ding/model/template/vac.html#VAC.compute_critic"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
 <dd><dl>
 <dt>Overview:</dt><dd><p>VAC forward computation graph for critic part, input observation tensor to predict state value.</p>
 </dd>
 <dt>Arguments:</dt><dd><ul class="simple">
-<li><p>x (<code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.Tensor</span></code>): The input observation tensor data.</p></li>
+<li><p>x (<code class="xref py py-obj docutils literal notranslate"><span class="pre">Union[torch.Tensor,</span> <span class="pre">Dict]</span></code>): The input observation tensor data. If a dictionary is provided,                 it should contain the key ‘observation’.</p></li>
 </ul>
 </dd>
 <dt>Returns:</dt><dd><ul class="simple">
@@ -547,7 +559,7 @@ so off-policy PPO are able to reuse old data very efficiently, but potentially b
 
 </div></blockquote>
 <p>The policy loss and value loss of PPO is implemented as follows:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">ppo_error</span><span class="p">(</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">ppo_error</span><span class="p">(</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">namedtuple</span><span class="p">,</span>
         <span class="n">clip_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.2</span><span class="p">,</span>
         <span class="n">use_value_clip</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -570,14 +582,15 @@ so off-policy PPO are able to reuse old data very efficiently, but potentially b
 <blockquote>
 <div><dl class="py function">
 <dt class="sig sig-object py" id="ding.rl_utils.ppo.ppo_policy_error">
-<span class="sig-prename descclassname"><span class="pre">ding.rl_utils.ppo.</span></span><span class="sig-name descname"><span class="pre">ppo_policy_error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">namedtuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dual_clip</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">namedtuple</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">namedtuple</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/ding/rl_utils/ppo.html#ppo_policy_error"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ding.rl_utils.ppo.ppo_policy_error" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">ding.rl_utils.ppo.</span></span><span class="sig-name descname"><span class="pre">ppo_policy_error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">namedtuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_ratio</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dual_clip</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entropy_bonus</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">namedtuple</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">namedtuple</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/ding/rl_utils/ppo.html#ppo_policy_error"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ding.rl_utils.ppo.ppo_policy_error" title="Permalink to this definition">¶</a></dt>
 <dd><dl>
-<dt>Overview:</dt><dd><p>Get PPO policy loss</p>
+<dt>Overview:</dt><dd><p>Get PPO policy loss (both for classical RL in control/video games and LLM/VLM RLHF).</p>
 </dd>
 <dt>Arguments:</dt><dd><ul class="simple">
-<li><p>data (<code class="xref py py-obj docutils literal notranslate"><span class="pre">namedtuple</span></code>): ppo input data with fieids shown in <code class="docutils literal notranslate"><span class="pre">ppo_policy_data</span></code></p></li>
-<li><p>clip_ratio (<code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code>): clip value for ratio</p></li>
-<li><p>dual_clip (<code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code>): a parameter c mentioned in arXiv:1912.09729 Equ. 5, shoule be in [1, inf),        defaults to 5.0, if you don’t want to use it, set this parameter to None</p></li>
+<li><p>data (<code class="xref py py-obj docutils literal notranslate"><span class="pre">namedtuple</span></code>): Ppo input data with fieids shown in <code class="docutils literal notranslate"><span class="pre">ppo_policy_data</span></code>.</p></li>
+<li><p>clip_ratio (<code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code>): Clip value for ratio, defaults to 0.2.</p></li>
+<li><p>dual_clip (<code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code>): A parameter c mentioned in arXiv:1912.09729 Equ. 5, shoule be in [1, inf),             defaults to 5.0, if you don’t want to use it, set this parameter to None</p></li>
+<li><p>entropy_bonus (<code class="xref py py-obj docutils literal notranslate"><span class="pre">bool</span></code>): Whether to use entropy bonus, defaults to True. LLM RLHF usually does not use it.</p></li>
 </ul>
 </dd>
 <dt>Returns:</dt><dd><ul class="simple">
@@ -608,6 +621,15 @@ so off-policy PPO are able to reuse old data very efficiently, but potentially b
 </div>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This function can be extended from <cite>B</cite> to more parallel dimensions, like <cite>(B, S)</cite>, where <cite>S</cite> is the
+sequence length in LLM/VLM.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For the action mask often used in LLM/VLM, users can set the <cite>weight</cite> to the action mask.</p>
+</div>
 </dd></dl>
 
 <dl class="py function">
@@ -769,33 +791,6 @@ skip-v4)</p>
 <td><p><a class="reference external" href="https://github.com/opendilab/DI-engine/tree/main/dizoo/atari/config/serial/spaceinvaders/spaceinvaders_offppo_config.py">config_link_s</a></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p>Hopper</p>
-<p>(Hopper-v3)</p>
-</td>
-<td><p>300</p></td>
-<td><img alt="../_images/hopper_offppo.png" src="../_images/hopper_offppo.png" />
-</td>
-<td><p><a class="reference external" href="https://github.com/opendilab/DI-engine/tree/main/dizoo/mujoco/config/hopper_offppo_default_config.py">config_link_ho</a></p></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p>Walker2d</p>
-<p>(Walker2d-v3)</p>
-</td>
-<td><p>500</p></td>
-<td><img alt="../_images/walker2d_offppo.png" src="../_images/walker2d_offppo.png" />
-</td>
-<td><p><a class="reference external" href="https://github.com/opendilab/DI-engine/tree/main/dizoo/mujoco/config/walker2d_offppo_default_config.py">config_link_w</a></p></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p>Halfcheetah</p>
-<p>(Halfcheetah-v3)</p>
-</td>
-<td><p>2000</p></td>
-<td><img alt="../_images/halfcheetah_offppo.png" src="../_images/halfcheetah_offppo.png" />
-</td>
-<td><p><a class="reference external" href="https://github.com/opendilab/DI-engine/tree/main/dizoo/mujoco/config/halfcheetah_offppo_default_config.py">config_link_ha</a></p></td>
-<td></td>
-</tr>
 </tbody>
 </table>
 <p>on-policy PPO Benchmark:</p>
@@ -821,7 +816,7 @@ skip-v4)</p>
 <tr class="row-odd"><td><p>Qbert</p>
 <p>(QbertNoFrameskip-v4)</p>
 </td>
-<td><p>10000</p></td>
+<td><p>12146</p></td>
 <td><img alt="../_images/qbert_onppo.png" src="../_images/qbert_onppo.png" />
 </td>
 <td><p><a class="reference external" href="https://github.com/opendilab/DI-engine/tree/main/dizoo/atari/config/serial/qbert/qbert_onppo_config.py">config_link_2</a></p></td>
@@ -831,66 +826,66 @@ skip-v4)</p>
 <p>(SpaceInvadersNoFrame
 skip-v4)</p>
 </td>
-<td><p>800</p></td>
+<td><p>907</p></td>
 <td><img alt="../_images/spaceinvaders_onppo.png" src="../_images/spaceinvaders_onppo.png" />
 </td>
 <td><p><a class="reference external" href="https://github.com/opendilab/DI-engine/tree/main/dizoo/atari/config/serial/spaceinvaders/spaceinvaders_onppo_config.py">config_link_3</a></p></td>
 <td><p>RLlib(671)</p></td>
 </tr>
-<tr class="row-odd"><td><p>Hopper</p>
+<tr class="row-odd"><td><p>Enduro</p>
+<p>(EnduroNoFrameskip-
+v4)</p>
+</td>
+<td><p>957</p></td>
+<td><img alt="../_images/enduro_onppo.png" src="../_images/enduro_onppo.png" />
+</td>
+<td><p><a class="reference external" href="https://github.com/opendilab/DI-engine/tree/main/dizoo/atari/config/serial/enduro/enduro_onppo_config.py">config_link_4</a></p></td>
+<td><p>RLlib(855)</p></td>
+</tr>
+<tr class="row-even"><td><p>Hopper</p>
 <p>(Hopper-v3)</p>
 </td>
 <td><p>3000</p></td>
 <td><img alt="../_images/hopper_onppo.png" src="../_images/hopper_onppo.png" />
 </td>
-<td><p><a class="reference external" href="https://github.com/opendilab/DI-engine/tree/main/dizoo/mujoco/config/hopper_onppo_default_config.py">config_link_4</a></p></td>
+<td><p><a class="reference external" href="https://github.com/opendilab/DI-engine/tree/main/dizoo/mujoco/config/hopper_onppo_config.py">config_link_5</a></p></td>
 <td><p>Tianshou(3127)</p>
-<blockquote>
-<div><p>Sb3(1567)</p>
-</div></blockquote>
+<p>Sb3(1567)</p>
 <p>spinningup(2500)</p>
 </td>
 </tr>
-<tr class="row-even"><td><p>Walker2d</p>
+<tr class="row-odd"><td><p>Walker2d</p>
 <p>(Walker2d-v3)</p>
 </td>
 <td><p>3700</p></td>
 <td><img alt="../_images/walker2d_onppo.png" src="../_images/walker2d_onppo.png" />
 </td>
-<td><p><a class="reference external" href="https://github.com/opendilab/DI-engine/tree/main/dizoo/mujoco/config/walker2d_onppo_default_config.py">config_link_5</a></p></td>
+<td><p><a class="reference external" href="https://github.com/opendilab/DI-engine/tree/main/dizoo/mujoco/config/walker2d_onppo_config.py">config_link_6</a></p></td>
 <td><p>Tianshou(4895)</p>
-<blockquote>
-<div><p>Sb3(1230)</p>
-</div></blockquote>
+<p>Sb3(1230)</p>
 <p>spinningup(2500)</p>
 </td>
 </tr>
-<tr class="row-odd"><td><p>Halfcheetah</p>
+<tr class="row-even"><td><p>Halfcheetah</p>
 <p>(Halfcheetah-v3)</p>
 </td>
 <td><p>3500</p></td>
 <td><img alt="../_images/halfcheetah_onppo.png" src="../_images/halfcheetah_onppo.png" />
 </td>
-<td><p><a class="reference external" href="https://github.com/opendilab/DI-engine/tree/main/dizoo/mujoco/config/halfcheetah_onppo_default_config.py">config_link_6</a></p></td>
-<td><blockquote>
-<div><p>Tianshou(7337)</p>
-<blockquote>
-<div><p>Sb3(1976)</p>
-</div></blockquote>
-</div></blockquote>
+<td><p><a class="reference external" href="https://github.com/opendilab/DI-engine/tree/main/dizoo/mujoco/config/halfcheetah_onppoconfig.py">config_link_7</a></p></td>
+<td><p>Tianshou(7337)</p>
+<p>Sb3(1976)</p>
 <p>spinningup(3000)</p>
 </td>
 </tr>
-<tr class="row-even"><td><p>Ant</p>
+<tr class="row-odd"><td><p>Ant</p>
 <p>(Ant-v3)</p>
 </td>
 <td><p>4200</p></td>
 <td><img alt="../_images/ant_onppo.png" src="../_images/ant_onppo.png" />
 </td>
-<td><p><a class="reference external" href="https://github.com/opendilab/DI-engine/tree/main/dizoo/mujoco/config/ant_onppo_default_config.py">config_link_7</a></p></td>
-<td><blockquote>
-<div><p>Tianshou(3258)</p>
-</div></blockquote>
+<td><p><a class="reference external" href="https://github.com/opendilab/DI-engine/tree/main/dizoo/mujoco/config/ant_onppoconfig.py">config_link_8</a></p></td>
+<td><p>Tianshou(3258)</p>
 <p>spinningup(650)</p>
 </td>
 </tr>

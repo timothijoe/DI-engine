@@ -102,6 +102,16 @@
                   <p>OpenDILab Decision AI Engine</p>
                 </a>
                 <a class="doc-dropdown-option nav-dropdown-item"
+                  href="https://github.com/opendilab/LightZero" target="_blank">
+                  <span class="dropdown-title">LightZero </span>
+                  <p>OpenDILab Decision Monte Carlo Tree Search Framework</p>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item"
+                  href="https://github.com/opendilab/GenerativeRL" target="_blank">
+                  <span class="dropdown-title">GenerativeRL </span>
+                  <p>OpenDILab Generative AI Framework</p>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item"
                   href="https://github.com/opendilab/DI-star" target="_blank">
                   <span class="dropdown-title">DI-star </span>
                   <p>OpenDILab Decision AI in StarCraftII</p>
@@ -312,7 +322,7 @@
 <section id="usage-of-rl-agent">
 <h2>Usage of RL Agent<a class="headerlink" href="#usage-of-rl-agent" title="Permalink to this heading">¶</a></h2>
 <p>The RL Agent class offers streamlined configurations for benchmark environments encountered in classic RL. These default settings have been extensively tested and deliver reliable performance. This makes it possible for new users to initiate the training process without requiring any prior information.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ding.bonus</span> <span class="kn">import</span> <span class="n">DQNAgent</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ding.bonus</span><span class="w"> </span><span class="kn">import</span> <span class="n">DQNAgent</span>
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
     <span class="c1"># Initialize the agent</span>
@@ -324,8 +334,8 @@
 </pre></div>
 </div>
 <p>The RL Agent class also supports users to train RL agents using custom configurations. The configuration format can refer to the default configuration. For example, to use the DQN algorithm to train the LunarLander environment, you can refer to the file <cite>gym_lunarlander_v2.py &lt;https://github.com/opendilab/DI-engine/blob/main/ding/config/example/DQN/ gym_lunarlander_v2.py&gt;</cite>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ding.bonus</span> <span class="kn">import</span> <span class="n">DQNAgent</span>
-<span class="kn">from</span> <span class="nn">ding.config.example.DQN.gym_lunarlander_v2</span> <span class="kn">import</span> <span class="n">cfg</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ding.bonus</span><span class="w"> </span><span class="kn">import</span> <span class="n">DQNAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ding.config.example.DQN.gym_lunarlander_v2</span><span class="w"> </span><span class="kn">import</span> <span class="n">cfg</span>
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
     <span class="c1"># Initialize the agent</span>

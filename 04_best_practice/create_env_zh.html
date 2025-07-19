@@ -102,6 +102,16 @@
                   <p>OpenDILab Decision AI Engine</p>
                 </a>
                 <a class="doc-dropdown-option nav-dropdown-item"
+                  href="https://github.com/opendilab/LightZero" target="_blank">
+                  <span class="dropdown-title">LightZero </span>
+                  <p>OpenDILab Decision Monte Carlo Tree Search Framework</p>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item"
+                  href="https://github.com/opendilab/GenerativeRL" target="_blank">
+                  <span class="dropdown-title">GenerativeRL </span>
+                  <p>OpenDILab Generative AI Framework</p>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item"
                   href="https://github.com/opendilab/DI-star" target="_blank">
                   <span class="dropdown-title">DI-star </span>
                   <p>OpenDILab Decision AI in StarCraftII</p>
@@ -510,8 +520,8 @@
 <p>更进一步地，为了简化 Env Wrapper 的配置难度，为经典决策环境提供一键可用的默认 Env Wrapper 设置，
 并直接做好相关的数据类型和接口转换（即从 gym 格式环境转换到 DI-engine 所需的 BaseEnv 衍生子环境），
 这部分模块中还设计实现了一种更便利的调用方式 DingEnvWrapper，对应的使用示例如下：</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">gym</span>
-<span class="kn">from</span> <span class="nn">ding.envs</span> <span class="kn">import</span> <span class="n">DingEnvWrapper</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">gym</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ding.envs</span><span class="w"> </span><span class="kn">import</span> <span class="n">DingEnvWrapper</span>
 
 <span class="n">cartpole_env</span> <span class="o">=</span> <span class="n">DingEnvWrapper</span><span class="p">(</span><span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s1">&#39;CartPole-v0&#39;</span><span class="p">))</span>
 <span class="n">pendulum_env</span> <span class="o">=</span> <span class="n">DingEnvWrapper</span><span class="p">(</span><span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s1">&#39;Pendulum-v1&#39;</span><span class="p">))</span>
@@ -532,7 +542,7 @@
 <p>因此，DI-engine 中设计并集成了环境管理器（Env Manager）模块，管理多个相同类型不同配置的环境。
 Env Manager 可以实现多个环境并行运行并返回相应信息，保持与原有环境相似的接口，从而在显著加速运行效率的同时保持与单个环境相似的使用接口，一个简单的对比示例如下：</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 单个环境</span>
-<span class="kn">import</span> <span class="nn">gym</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">gym</span>
 
 <span class="n">env</span> <span class="o">=</span> <span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s1">&#39;CartPole-v0&#39;</span><span class="p">)</span>
 <span class="n">vectorized_env_num</span> <span class="o">=</span> <span class="mi">8</span>
@@ -553,10 +563,10 @@ Env Manager 可以实现多个环境并行运行并返回相应信息，保持�
 
 
 <span class="c1"># 多个向量化环境</span>
-<span class="kn">import</span> <span class="nn">gym</span>
-<span class="kn">from</span> <span class="nn">ding.envs</span> <span class="kn">import</span> <span class="n">DingEnvWrapper</span><span class="p">,</span> <span class="n">SyncSubprocessEnvManager</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">gym</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ding.envs</span><span class="w"> </span><span class="kn">import</span> <span class="n">DingEnvWrapper</span><span class="p">,</span> <span class="n">SyncSubprocessEnvManager</span>
 
-<span class="k">def</span> <span class="nf">env_fn</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">env_fn</span><span class="p">():</span>
     <span class="k">return</span> <span class="n">DingEnvWrapper</span><span class="p">(</span><span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s1">&#39;CartPole-v0&#39;</span><span class="p">))</span>
 
 <span class="n">vectorized_env_num</span> <span class="o">=</span> <span class="mi">4</span>
